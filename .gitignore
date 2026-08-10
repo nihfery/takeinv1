@@ -1,0 +1,47 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Installed dependencies
+**/node_modules/
+**/vendor/
+
+# Generated frontend output
+**/.next/
+**/dist/
+**/build/
+**/coverage/
+*.tsbuildinfo
+
+# Laravel/PHP runtime output
+backend/laravel-core/.phpunit.cache
+backend/laravel-core/auth.json
+backend/laravel-core/public/build/
+backend/laravel-core/public/hot
+backend/laravel-core/public/storage
+backend/laravel-core/storage/*.key
+backend/laravel-core/storage/logs/*.log
+
+# Local databases, logs, and caches
+*.sqlite
+*.sqlite-*
+*.log
+.cache/
+.eslintcache
+.phpunit.result.cache
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~

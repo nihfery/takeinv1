@@ -1,0 +1,122 @@
+name: Container Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "backend/laravel-core/**"
+      - "apps/customer-web/**"
+      - "apps/provider-landing/**"
+      - "platform/docker/**"
+      - "platform/gateway/**"
+      - "docker-compose.yml"
+      - ".github/workflows/container-scan.yml"
+  schedule:
+    - cron: "11 3 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: container-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: laravel
+            dockerfile: backend/laravel-core/Dockerfile
+            build_args: ""
+          - image: backend-http
+            dockerfile: platform/gateway/backend-http/Dockerfile
+            build_args: ""
+          - image: customer-web
+            dockerfile: platform/docker/Dockerfile.next
+            build_args: |-
+              APP_PATH=apps/customer-web
+              BACKEND_PROXY_URL=http://127.0.0.1:8000
+              NEXT_PUBLIC_BACKEND_URL=https://api.example.invalid
+              NEXT_PUBLIC_API_BASE_URL=https://api.example.invalid/api
+              NEXT_PUBLIC_PROVIDER_FRONTEND_URL=https://partners.example.invalid
+              NEXT_PUBLIC_CUSTOMER_APP_URL=https://customer.example.invalid
+          - image: provider-landing
+            dockerfile: platform/docker/Dockerfile.next
+            build_args: |-
+              APP_PATH=apps/provider-landing
+              NEXT_PUBLIC_BACKEND_URL=https://api.example.invalid
+              NEXT_PUBLIC_API_BASE_URL=https://api.example.invalid/api
+              NEXT_PUBLIC_PROVIDER_LOGIN_PATH=/provider/signin
+              NEXT_PUBLIC_PROVIDER_DASHBOARD_PATH=/provider/dashboard
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build scan image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build_args }}
+          load: true
+          push: false
+          tags: takein-ci-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=scan-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=scan-${{ matrix.image }}
+
+      - name: Scan image with Trivy
+        id: scan
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: takein-ci-${{ matrix.image }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.image }}.sarif
+          severity: CRITICAL,HIGH
+          vuln-type: os,library
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Detect SARIF report
+        id: sarif
+        if: always()
+        run: |
+          if [[ -s "trivy-${{ matrix.image }}.sarif" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload Trivy report artifact
+        if: always() && steps.sarif.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: trivy-${{ matrix.image }}-${{ github.run_id }}
+          path: trivy-${{ matrix.image }}.sarif
+          retention-days: 30
+
+      - name: Upload Trivy report to code scanning
+        if: always() && github.event_name != 'pull_request' && steps.sarif.outputs.available == 'true'
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          sarif_file: trivy-${{ matrix.image }}.sarif
+          category: trivy-${{ matrix.image }}
+
+      - name: Enforce container scan result
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "Trivy found a fixable HIGH/CRITICAL vulnerability or failed to complete." >&2
+          exit 1

@@ -1,0 +1,103 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full commit SHA whose required CI and images are green
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production
+    env:
+      DEPLOY_SHA: ${{ inputs.commit_sha }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      DEPLOY_ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }}
+      DEPLOY_COMPOSE_PROJECT: ${{ vars.DEPLOY_COMPOSE_PROJECT }}
+      DEPLOY_ALLOWED_BRANCH: ${{ vars.DEPLOY_ALLOWED_BRANCH }}
+      DEPLOY_SMOKE_URL: ${{ vars.DEPLOY_SMOKE_URL }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REGISTRY_USERNAME: ${{ github.actor }}
+    steps:
+      - name: Check out requested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Resolve lowercase GHCR prefix
+        run: echo "IMAGE_PREFIX=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Validate protected deployment configuration
+        run: bash tools/ci/validate-deploy-env.sh
+
+      - name: Verify every required workflow for the commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/ci/verify-ci-runs.sh "$GITHUB_REPOSITORY" "$DEPLOY_SHA"
+
+      - name: Configure strict SSH host verification
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/takein_deploy_key"
+          chmod 600 "$HOME/.ssh/takein_deploy_key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Authenticate the remote host to GHCR
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | ssh \
+            -i "$HOME/.ssh/takein_deploy_key" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker login ghcr.io --username '$REGISTRY_USERNAME' --password-stdin >/dev/null"
+
+      - name: Deploy exact tested commit
+        run: |
+          ssh \
+            -i "$HOME/.ssh/takein_deploy_key" \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$DEPLOY_SHA' '$DEPLOY_PATH' '$DEPLOY_ENV_FILE' '$DEPLOY_COMPOSE_PROJECT' '$DEPLOY_ALLOWED_BRANCH' '$IMAGE_PREFIX'" \
+            < tools/ci/deploy-remote.sh
+
+      - name: Verify public readiness endpoint
+        run: >-
+          curl
+          --fail
+          --silent
+          --show-error
+          --retry 5
+          --retry-all-errors
+          --retry-delay 5
+          --max-time 20
+          "$DEPLOY_SMOKE_URL"
+
+      - name: Remove ephemeral SSH key
+        if: always()
+        run: rm -f -- "$HOME/.ssh/takein_deploy_key"

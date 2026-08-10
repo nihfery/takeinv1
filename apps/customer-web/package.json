@@ -1,0 +1,23 @@
+{
+    "name": "jasaku-customer-landing",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "next dev -H 0.0.0.0 -p 5174",
+        "build": "next build",
+        "start": "next start -H 0.0.0.0 -p 5174"
+    },
+    "dependencies": {
+        "framer-motion": "^12.40.0",
+        "lucide-react": "^1.17.0",
+        "maplibre-gl": "^5.24.0",
+        "next": "^16.2.11",
+        "react": "^19.2.6",
+        "react-dom": "^19.2.6"
+    },
+    "overrides": {
+        "postcss": "8.5.26",
+        "sharp": "0.35.3"
+    }
+}

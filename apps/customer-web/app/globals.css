@@ -1,0 +1,32 @@
+/*
+ * Customer landing global stylesheet.
+ * Split into modular files by function. Import order is preserved exactly as
+ * the original single file so the CSS cascade / specificity behaviour is identical.
+ *
+ *  base.css              -> @font-face, :root tokens, reset & base element styles
+ *  navbar.css            -> top navigation + mega-menu (base layer)
+ *  hero-search.css       -> hero section + search shell/form/panels/calendar
+ *  landing.css           -> landing content: category row, cards, app, reviews, stats, business, browse
+ *  footer-responsive.css -> footer + landing responsive media queries
+ *  navbar-overrides.css  -> navigation refinements + mega-menu mobile + scroll geometry
+ *  search-page.css       -> /search results page: grid layout, map, navbar search slot, hover preview
+ */
+
+
+
+@import './styles/base.css';
+@import './styles/auth.css';
+@import './styles/navbar.css';
+@import './styles/hero-search.css';
+@import './styles/landing.css';
+@import './styles/footer-responsive.css';
+@import './styles/navbar-overrides.css';
+@import './styles/category-menu.css';
+@import './styles/category-page.css';
+@import './styles/search-page.css';
+@import './styles/salon-detail.css';
+@import './styles/booking-flow.css';
+@import './styles/profile.css';
+@import './styles/promos.css';
+@import './styles/favorites.css';
+@import './styles/activity.css';

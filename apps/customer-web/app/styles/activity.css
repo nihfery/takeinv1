@@ -1,0 +1,378 @@
+/* ==========================================================================
+   Activity Page Styles
+   Extracted from app/activity/page.jsx inline styles
+   ========================================================================== */
+
+/* --- Header --- */
+.mybooking-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.mybooking-subtitle {
+    color: #6f6862;
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.mybooking-tabs {
+    margin-bottom: 24px;
+}
+
+/* --- Status Badge --- */
+.mybooking-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.mybooking-status-badge.confirmed,
+.mybooking-status-badge.completed {
+    background: #eefcf1;
+    color: #2e7d32;
+}
+
+.mybooking-status-badge.waiting,
+.mybooking-status-badge.pending {
+    background: #fffede;
+    color: #b57a00;
+}
+
+.mybooking-status-badge.cancelled,
+.mybooking-status-badge.rejected {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.mybooking-status-badge.default {
+    background: #faf6f1;
+    color: #8c8075;
+}
+
+/* --- Bookings List --- */
+.mybooking-list {
+    display: grid;
+    gap: 20px;
+}
+
+/* --- Booking Card --- */
+.mybooking-card {
+    background: #ffffff;
+    border: 1px solid #ebe3d8;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: start;
+}
+
+.mybooking-card-image {
+    width: 90px;
+    height: 90px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+/* --- Card Details --- */
+.mybooking-card-header {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.mybooking-card-salon {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.mybooking-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: #6f6862;
+    margin-bottom: 10px;
+}
+
+.mybooking-meta-item {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* --- Services Summary Strip --- */
+.mybooking-services-strip {
+    background: #faf6f1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #161213;
+    border: 1px solid #ebe3d8;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.mybooking-services-label {
+    font-weight: 700;
+    color: #8c8075;
+}
+
+.mybooking-addon-tag {
+    color: #ff5c16;
+}
+
+/* --- Review Display --- */
+.mybooking-review-block {
+    margin-top: 12px;
+    border-top: 1px solid #ebe3d8;
+    padding-top: 10px;
+    font-size: 13px;
+}
+
+.mybooking-review-stars {
+    display: flex;
+    color: #ffc00a;
+    gap: 2px;
+    margin-bottom: 4px;
+}
+
+.mybooking-review-comment {
+    font-style: italic;
+    margin: 0;
+    color: #6f6862;
+}
+
+/* --- Cancellation Reason --- */
+.mybooking-cancel-reason {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #c62828;
+    background: #ffebee;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* --- Right Actions Column --- */
+.mybooking-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 150px;
+    justify-content: center;
+    height: 100%;
+}
+
+.mybooking-total-row {
+    font-size: 13px;
+    color: #6f6862;
+    text-align: right;
+    margin-bottom: 4px;
+}
+
+.mybooking-total-amount {
+    color: #c2440a;
+    font-size: 15px;
+}
+
+.mybooking-action-btn {
+    height: 36px;
+    font-size: 12px;
+}
+
+.mybooking-cancel-btn {
+    color: #c62828;
+    border-color: #ffebee;
+}
+
+.mybooking-pay-btn {
+    background: #ffa300;
+}
+
+.mybooking-review-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* --- Empty State --- */
+.mybooking-empty-state {
+    border: 1px dashed #ebe3d8;
+    border-radius: 16px;
+    padding: 60px 20px;
+    text-align: center;
+    color: #6f6862;
+}
+
+.mybooking-empty-icon {
+    margin: 0 auto 12px;
+    opacity: 0.5;
+}
+
+.mybooking-empty-desc {
+    font-size: 13px;
+    margin: 4px 0 16px;
+}
+
+.mybooking-empty-btn {
+    height: 38px;
+}
+
+/* --- Modal Overlay --- */
+.mybooking-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* --- Modal Box --- */
+.mybooking-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    padding: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.mybooking-modal.sm {
+    max-width: 440px;
+}
+
+.mybooking-modal.md {
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.mybooking-modal-header {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.mybooking-modal-header.cancel {
+    color: #c2440a;
+}
+
+.mybooking-modal-header.reschedule {
+    color: #ff5c16;
+}
+
+.mybooking-modal-header.review {
+    color: #ffc00a;
+}
+
+.mybooking-modal-title {
+    font-size: 16px;
+}
+
+.mybooking-modal-title.dark {
+    color: #161213;
+}
+
+.mybooking-modal-desc {
+    font-size: 13px;
+    color: #6f6862;
+    line-height: 20px;
+    margin: 0 0 16px;
+}
+
+/* --- Modal Form Elements --- */
+.mybooking-modal-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8c8075;
+}
+
+.mybooking-modal-select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #d9cfc2;
+    font-size: 13px;
+    background: #ffffff;
+    outline: 0;
+}
+
+.mybooking-reschedule-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8c8075;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.mybooking-time-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+/* --- Modal Star Rating --- */
+.mybooking-star-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.mybooking-star-btn {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* --- Modal Actions --- */
+.mybooking-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.mybooking-modal-actions .service-select-btn,
+.mybooking-modal-actions .booking-action-btn {
+    flex: 1;
+    height: 40px;
+}
+
+.mybooking-modal-actions .confirm-cancel {
+    background: #c62828;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .mybooking-card {
+        grid-template-columns: 1fr;
+    }
+
+    .mybooking-card-image {
+        width: 100%;
+        height: 160px;
+    }
+
+    .mybooking-actions {
+        min-width: unset;
+    }
+
+    .mybooking-total-row {
+        text-align: left;
+    }
+}
