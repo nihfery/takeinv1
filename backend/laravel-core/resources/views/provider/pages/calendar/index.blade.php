@@ -425,7 +425,7 @@
                                         $eventTopHalfHour = $schedulerTopPadding + ($eventOffset * 240) + 2;
                                         $eventHeightHour = max(1, ($eventDurationHours * 168) - 4);
                                         $eventHeightHalfHour = max(1, ($eventDurationHours * 240) - 4);
-                                        $eventLeft = 16 + ($eventLayout['lane'] * 252);
+                                        $eventLeft = 8 + ($eventLayout['lane'] * 252);
                                     @endphp
                                     <button
                                         type="button"
