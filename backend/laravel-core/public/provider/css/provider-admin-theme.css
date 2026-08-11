@@ -577,7 +577,7 @@ body.provider-body .provider-calendar-modal.is-open {
 }
 
 body.provider-body .provider-calendar-modal-dialog {
-    width: min(760px, 100%);
+    width: min(920px, 100%);
     max-height: min(820px, calc(100vh - 48px));
     overflow: hidden;
     border: 1px solid var(--provider-border);
@@ -595,8 +595,8 @@ body.provider-body .provider-calendar-modal.is-open .provider-calendar-modal-dia
 }
 
 body.provider-body .provider-calendar-modal-header {
-    min-height: 92px;
-    padding: 18px 20px;
+    min-height: 104px;
+    padding: 20px 24px;
     border-bottom: 1px solid var(--provider-border);
     display: flex;
     align-items: center;
@@ -611,8 +611,8 @@ body.provider-body .provider-calendar-modal-date {
 }
 
 body.provider-body .provider-calendar-modal-date > span {
-    width: 58px;
-    height: 58px;
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
     background: #eee9ff;
     color: var(--provider-purple);
@@ -623,13 +623,13 @@ body.provider-body .provider-calendar-modal-date > span {
 }
 
 body.provider-body .provider-calendar-modal-date > span strong {
-    font-size: 22px;
+    font-size: 25px;
     line-height: 1;
 }
 
 body.provider-body .provider-calendar-modal-date > span small {
     margin-top: 3px;
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 900;
 }
 
@@ -643,26 +643,26 @@ body.provider-body .provider-calendar-modal-date div > small {
 body.provider-body .provider-calendar-modal-date p {
     margin-bottom: 1px;
     color: var(--provider-purple);
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
 }
 
 body.provider-body .provider-calendar-modal-date h3 {
     color: var(--provider-text);
-    font-size: 18px;
+    font-size: 21px;
 }
 
 body.provider-body .provider-calendar-modal-date div > small {
     margin-top: 3px;
     color: var(--provider-muted);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
 }
 
 body.provider-body .provider-calendar-modal-close {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--provider-border);
     border-radius: 11px;
     background: var(--provider-card);
@@ -680,7 +680,7 @@ body.provider-body .provider-calendar-modal-close svg {
 }
 
 body.provider-body .provider-calendar-modal-body {
-    padding: 18px 20px 22px;
+    padding: 22px 24px 26px;
     overflow-y: auto;
     overscroll-behavior: contain;
 }
@@ -726,13 +726,13 @@ body.provider-body .provider-calendar-staff-group > header small {
 
 body.provider-body .provider-calendar-staff-group > header strong {
     color: var(--provider-text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 body.provider-body .provider-calendar-staff-group > header small {
     margin-top: 1px;
     color: var(--provider-muted);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 body.provider-body .provider-calendar-staff-group > header b {
@@ -741,7 +741,7 @@ body.provider-body .provider-calendar-staff-group > header b {
     border-radius: 8px;
     background: #fff0d9;
     color: #b86800;
-    font-size: 8px;
+    font-size: 10px;
 }
 
 body.provider-body .provider-calendar-modal-appointments {
@@ -751,13 +751,13 @@ body.provider-body .provider-calendar-modal-appointments {
 }
 
 body.provider-body .provider-calendar-modal-appointment {
-    padding: 13px;
+    padding: 16px;
     border: 1px solid var(--provider-border);
     border-radius: 15px;
     background: #fcfbfe;
     display: grid;
-    grid-template-columns: 74px minmax(0, 1fr);
-    gap: 13px;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 16px;
 }
 
 body.provider-body .provider-calendar-modal-appointment[hidden],
@@ -787,13 +787,13 @@ body.provider-body .provider-calendar-appointment-time span {
 
 body.provider-body .provider-calendar-appointment-time strong {
     color: var(--provider-text);
-    font-size: 14px;
+    font-size: 18px;
 }
 
 body.provider-body .provider-calendar-appointment-time span {
     margin-top: 2px;
     color: var(--provider-muted);
-    font-size: 8px;
+    font-size: 11px;
     white-space: nowrap;
 }
 
@@ -809,11 +809,11 @@ body.provider-body .provider-calendar-appointment-title {
 }
 
 body.provider-body .provider-calendar-appointment-title > span {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     background: #eee9ff;
     color: var(--provider-purple);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 body.provider-body .provider-calendar-appointment-title > div {
@@ -830,18 +830,20 @@ body.provider-body .provider-calendar-appointment-title small {
 
 body.provider-body .provider-calendar-appointment-title strong {
     color: var(--provider-text);
-    font-size: 11px;
+    font-size: 14px;
 }
 
 body.provider-body .provider-calendar-appointment-title small {
     margin-top: 1px;
     color: var(--provider-muted);
-    font-size: 8px;
+    font-size: 10px;
 }
 
 body.provider-body .provider-calendar-appointment-title em {
     margin-left: auto;
     flex: 0 0 auto;
+    padding: 6px 11px;
+    font-size: 11px !important;
     font-style: normal;
 }
 
@@ -860,8 +862,8 @@ body.provider-body .provider-calendar-appointment-services {
 }
 
 body.provider-body .provider-calendar-appointment-services > span {
-    min-width: 118px;
-    padding: 7px 9px;
+    min-width: 138px;
+    padding: 9px 11px;
     border: 1px solid color-mix(in srgb, var(--provider-purple) 22%, var(--provider-border));
     border-radius: 9px;
     background: color-mix(in srgb, var(--provider-purple) 6%, var(--provider-card));
@@ -874,13 +876,13 @@ body.provider-body .provider-calendar-appointment-services small {
 
 body.provider-body .provider-calendar-appointment-services strong {
     color: var(--provider-text);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 body.provider-body .provider-calendar-appointment-services small {
     margin-top: 2px;
     color: var(--provider-muted);
-    font-size: 8px;
+    font-size: 10px;
 }
 
 body.provider-body .provider-calendar-appointment-meta {
@@ -896,13 +898,13 @@ body.provider-body .provider-calendar-appointment-meta span {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 700;
 }
 
 body.provider-body .provider-calendar-appointment-meta svg {
-    width: 11px;
-    height: 11px;
+    width: 14px;
+    height: 14px;
     stroke: currentColor;
     stroke-width: 1.8;
 }
@@ -921,7 +923,7 @@ body.provider-body .provider-calendar-customer-fields {
 
 body.provider-body .provider-calendar-customer-fields > div {
     min-width: 0;
-    padding: 8px 10px;
+    padding: 11px 13px;
     background: var(--provider-card, #fff);
 }
 
@@ -937,7 +939,7 @@ body.provider-body .provider-calendar-customer-fields dd {
 body.provider-body .provider-calendar-customer-fields dt {
     margin-bottom: 2px;
     color: var(--provider-muted);
-    font-size: 7px;
+    font-size: 9px;
     font-weight: 800;
     letter-spacing: .04em;
     text-transform: uppercase;
@@ -946,13 +948,267 @@ body.provider-body .provider-calendar-customer-fields dt {
 body.provider-body .provider-calendar-customer-fields dd {
     overflow-wrap: anywhere;
     color: var(--provider-text);
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1.4;
 }
 
 body.provider-body .provider-calendar-customer-fields dd.has-alert {
     color: #b42318;
+}
+
+body.provider-body .provider-calendar-customer-fields .provider-calendar-gender-field {
+    padding: 8px;
+    display: grid;
+    place-items: center;
+}
+
+body.provider-body .provider-calendar-gender-field dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+body.provider-body .provider-calendar-gender-field dd {
+    display: grid;
+    place-items: center;
+}
+
+body.provider-body .provider-calendar-gender-icon {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #d9d4e4;
+    border-radius: 50%;
+    background: #f3f1f7;
+    color: #71697f;
+    display: grid;
+    place-items: center;
+}
+
+body.provider-body .provider-calendar-gender-icon.is-female {
+    border-color: #efb5e5;
+    background: #fff0fb;
+    color: #c84cae;
+}
+
+body.provider-body .provider-calendar-gender-icon.is-male {
+    border-color: #aad8f5;
+    background: #edf8ff;
+    color: #248bc7;
+}
+
+body.provider-body .provider-calendar-gender-icon svg {
+    width: 21px;
+    height: 21px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+body.provider-body .provider-calendar-detail-sections {
+    margin-top: 15px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+body.provider-body .provider-calendar-detail-section {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--provider-purple) 14%, var(--provider-border));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--provider-purple) 2.5%, var(--provider-card));
+}
+
+body.provider-body .provider-calendar-detail-section > header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.provider-body .provider-calendar-detail-section > header > span,
+body.provider-body .provider-calendar-payment-summary > div:first-child > span {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: #eee9ff;
+    color: var(--provider-purple);
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+}
+
+body.provider-body .provider-calendar-detail-section > header svg,
+body.provider-body .provider-calendar-payment-summary svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+body.provider-body .provider-calendar-detail-section > header strong,
+body.provider-body .provider-calendar-detail-section > header small {
+    display: block;
+}
+
+body.provider-body .provider-calendar-detail-section > header strong {
+    color: var(--provider-text);
+    font-size: 13px;
+}
+
+body.provider-body .provider-calendar-detail-section > header small {
+    margin-top: 2px;
+    color: var(--provider-muted);
+    font-size: 10px;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-customer-fields {
+    margin-top: 12px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    gap: 8px;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-customer-fields > div {
+    min-height: 58px;
+    padding: 10px 11px;
+    border: 1px solid color-mix(in srgb, var(--provider-purple) 11%, var(--provider-border));
+    border-radius: 10px;
+    background: var(--provider-card, #fff);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-customer-fields dt {
+    margin-bottom: 4px;
+    font-size: 8px;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-customer-fields dd {
+    font-size: 11px;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-gender-field {
+    padding: 8px 11px;
+    place-items: initial;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-gender-field dt {
+    position: static;
+    width: auto;
+    height: auto;
+    margin-bottom: 4px;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-gender-field dd {
+    display: block;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-empty-value {
+    color: var(--provider-text);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-gender-icon {
+    width: 30px;
+    height: 30px;
+}
+
+body.provider-body .provider-calendar-detail-section .provider-calendar-gender-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+body.provider-body .provider-calendar-payment-summary {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--provider-purple) 22%, var(--provider-border));
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f8f5ff, #f1ecff);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+body.provider-body .provider-calendar-payment-summary > div:first-child {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+body.provider-body .provider-calendar-payment-summary small,
+body.provider-body .provider-calendar-payment-summary strong {
+    display: block;
+}
+
+body.provider-body .provider-calendar-payment-summary small {
+    margin-bottom: 3px;
+    color: var(--provider-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+body.provider-body .provider-calendar-payment-summary strong {
+    color: var(--provider-text);
+    font-size: 12px;
+}
+
+body.provider-body .provider-calendar-payment-total {
+    flex: 0 0 auto;
+    text-align: right;
+}
+
+body.provider-body .provider-calendar-payment-total strong {
+    color: var(--provider-purple);
+    font-size: 18px;
+}
+
+@media (max-width: 760px) {
+    body.provider-body .provider-calendar-detail-sections {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.provider-body .provider-calendar-payment-summary {
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    body.provider-body .provider-calendar-detail-section .provider-calendar-customer-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.provider-body .provider-calendar-payment-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    body.provider-body .provider-calendar-payment-total {
+        width: 100%;
+        padding-top: 12px;
+        border-top: 1px solid color-mix(in srgb, var(--provider-purple) 20%, transparent);
+        text-align: left;
+    }
 }
 
 body.provider-body .provider-calendar-appointment-note {
@@ -971,13 +1227,13 @@ body.provider-body .provider-calendar-appointment-note strong {
     display: block;
     margin-bottom: 2px;
     color: var(--provider-muted);
-    font-size: 8px;
+    font-size: 9px;
     text-transform: uppercase;
 }
 
 body.provider-body .provider-calendar-appointment-note p {
     color: var(--provider-text);
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.45;
 }
 
@@ -1022,8 +1278,8 @@ body.provider-body .provider-calendar-modal-empty p {
 }
 
 body.provider-body .provider-calendar-modal-footer {
-    min-height: 68px;
-    padding: 13px 20px;
+    min-height: 78px;
+    padding: 15px 24px;
     border-top: 1px solid var(--provider-border);
     display: flex;
     align-items: center;
@@ -1033,8 +1289,8 @@ body.provider-body .provider-calendar-modal-footer {
 
 body.provider-body .provider-calendar-modal-footer button,
 body.provider-body .provider-calendar-modal-footer a {
-    min-height: 38px;
-    padding: 0 14px;
+    min-height: 44px;
+    padding: 0 18px;
     border-radius: 11px;
     display: inline-flex;
     align-items: center;
@@ -1043,7 +1299,7 @@ body.provider-body .provider-calendar-modal-footer a {
     cursor: pointer;
     text-decoration: none;
     font: inherit;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 850;
 }
 
@@ -1269,7 +1525,7 @@ body.provider-body .provider-calendar-modal-footer svg {
     }
 
     body.provider-body .provider-calendar-appointment-title em {
-        font-size: 7px !important;
+        font-size: 10px !important;
     }
 }
 

@@ -182,8 +182,10 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'today', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-resource-scheduler is-day', false)
-            ->assertSee('provider-resource-staff-head', false)
-            ->assertSee('data-staff-column="staff-' . $staff->id . '"', false)
+            ->assertSee('provider-resource-single-day-head', false)
+            ->assertSee('data-appointment-column="all"', false)
+            ->assertSee('data-calendar-zoom-out', false)
+            ->assertSee('data-calendar-zoom-in', false)
             ->assertSee('class="active">Day</a>', false);
         $this->assertSame([$selectedDay->id], $bookingIds($todayResponse));
 
@@ -192,6 +194,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'week', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-resource-scheduler is-week', false)
+            ->assertSee('data-calendar-zoom-out', false)
+            ->assertSee('data-calendar-zoom-in', false)
             ->assertSee('class="active">7 Days</a>', false);
         $this->assertSame([$selectedDay->id, $seventhDay->id], $bookingIds($weekResponse));
 
@@ -200,6 +204,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'month', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-month-calendar-grid', false)
+            ->assertSee('data-calendar-zoom-out', false)
+            ->assertSee('data-calendar-zoom-in', false)
             ->assertSee('class="active">Month</a>', false);
         $this->assertSame([$selectedDay->id, $seventhDay->id, $eighthDay->id], $bookingIds($monthResponse));
 
@@ -208,6 +214,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'year', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-calendar-year-grid', false)
+            ->assertSee('data-calendar-zoom-out', false)
+            ->assertSee('data-calendar-zoom-in', false)
             ->assertSee('class="active">Year</a>', false);
         $this->assertSame(
             [$selectedDay->id, $seventhDay->id, $eighthDay->id, $nextMonth->id, $sameYear->id],
@@ -216,7 +224,7 @@ class ProviderGroupBookingDisplayTest extends TestCase
         $this->assertNotContains($nextYear->id, $bookingIds($yearResponse));
     }
 
-    public function test_day_calendar_uses_staff_columns_combined_service_duration_and_customer_profile_details(): void
+    public function test_day_calendar_uses_all_appointments_timeline_combined_service_duration_and_customer_profile_details(): void
     {
         [$provider, $branch, $staff, $otherStaff, $firstService, $secondService] = $this->fixture();
         $customer = User::factory()->create([
@@ -294,18 +302,18 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->assertOk();
 
         $response
-            ->assertSee('data-staff-column="staff-' . $staff->id . '"', false)
-            ->assertSee('data-staff-column="staff-' . $otherStaff->id . '"', false)
+            ->assertSee('data-appointment-column="all"', false)
+            ->assertSee('All Appointments')
             ->assertSee('data-calendar-entry="booking-' . $booking->id . '-participant-1"', false)
             ->assertSee('--scheduler-top-padding: 20px', false)
-            ->assertSee('--half-hour-height: 32px', false)
-            ->assertSee('is-full-hour" style="--time-top: 20px;">07:00', false)
-            ->assertSee('is-half-hour" style="--time-top: 52px;">07:30', false)
-            ->assertSee('is-full-hour" style="--time-top: 980px;">22:00', false)
+            ->assertSee('--scheduler-height-hour: 2560px', false)
+            ->assertSee('is-full-hour" style="--time-top-hour: 20px; --time-top-half-hour: 20px;">07:00', false)
+            ->assertSee('is-half-hour" style="--time-top-hour: 104px; --time-top-half-hour: 140px;">07:30', false)
+            ->assertSee('is-full-hour" style="--time-top-hour: 2540px; --time-top-half-hour: 3620px;">22:00', false)
             ->assertSee('provider-resource-grid-line is-half-hour', false)
             ->assertSee('provider-resource-grid-line is-full-hour', false)
-            ->assertSee('--event-top: 212px; --event-height: 96px', false)
-            ->assertSee('--event-top: 308px; --event-height: 64px', false)
+            ->assertSee('--event-top-hour: 526px; --event-top-half-hour: 742px; --event-height-hour: 248px; --event-height-half-hour: 356px', false)
+            ->assertSee('--event-top-hour: 778px; --event-top-half-hour: 1102px; --event-height-hour: 164px; --event-height-half-hour: 236px', false)
             ->assertSee('10:00 - 11:30')
             ->assertSee('11:30 - 12:30')
             ->assertDontSee('provider-resource-now-line', false)
@@ -315,7 +323,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->assertSee('Hair Spa Group')
             ->assertSee('Express Facial Group')
             ->assertSee('Alergi pewarna rambut')
-            ->assertSee('Female')
+            ->assertSee('provider-calendar-gender-icon is-female', false)
+            ->assertSee('aria-label="Gender: Female"', false)
             ->assertSee('12 Apr 1997')
             ->assertSee('Gunakan produk untuk kulit sensitif.');
     }
