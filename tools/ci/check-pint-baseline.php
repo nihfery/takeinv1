@@ -99,12 +99,35 @@ if ($exitCode === 1) {
     }
 
     foreach ($result['files'] ?? [] as $file) {
-        if (! is_array($file) || ! isset($file['path'])) {
+        if (! is_array($file)) {
             fwrite(STDERR, "Pint JSON did not contain a valid file path.\n");
             exit(2);
         }
 
-        $relativePath = str_replace('\\', '/', (string) $file['path']);
+        // Laravel Pint currently reports `path` on Windows and `name` on
+        // Linux. Accept both documented payload shapes while rejecting an
+        // ambiguous response if a future version emits conflicting values.
+        $reportedPaths = array_values(array_filter(
+            [$file['path'] ?? null, $file['name'] ?? null],
+            static fn (mixed $value): bool => is_string($value) && $value !== '',
+        ));
+
+        if ($reportedPaths === []) {
+            fwrite(STDERR, "Pint JSON did not contain a valid file path.\n");
+            exit(2);
+        }
+
+        $normalizedPaths = array_values(array_unique(array_map(
+            static fn (string $path): string => str_replace('\\', '/', $path),
+            $reportedPaths,
+        )));
+
+        if (count($normalizedPaths) !== 1) {
+            fwrite(STDERR, "Pint JSON contained conflicting file paths.\n");
+            exit(2);
+        }
+
+        $relativePath = $normalizedPaths[0];
         $absolutePath = $backendRoot.'/'.$relativePath;
 
         if (str_starts_with($relativePath, '/') || preg_match('#(^|/)\.\.(/|$)#', $relativePath) === 1) {
