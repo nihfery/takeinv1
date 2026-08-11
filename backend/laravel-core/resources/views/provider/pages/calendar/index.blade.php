@@ -98,14 +98,10 @@
     };
     $schedulerStartHour = 7;
     $schedulerEndHour = 22;
-    $schedulerHourHeight = 64;
     $schedulerTopPadding = 20;
     $schedulerBottomPadding = 20;
     $schedulerIntervalMinutes = 30;
     $schedulerTimeMarkers = range($schedulerStartHour * 60, $schedulerEndHour * 60, $schedulerIntervalMinutes);
-    $schedulerTimelineHeight = ($schedulerEndHour - $schedulerStartHour) * $schedulerHourHeight;
-    $schedulerHeight = $schedulerTimelineHeight + $schedulerTopPadding + $schedulerBottomPadding;
-    $schedulerResourceCount = max(1, $schedulerResources->count());
 
     $appointmentCount = $calendarEntries->count();
 
@@ -158,7 +154,7 @@
     $money = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
 @endphp
 
-<section class="admin-category-page provider-booking-category-page provider-appointment-calendar provider-calendar-consistent-page" data-appointment-calendar>
+<section class="admin-category-page provider-booking-category-page provider-appointment-calendar provider-calendar-consistent-page" data-appointment-calendar data-calendar-view="{{ $calendarView }}" data-calendar-zoom="hour">
     <div class="provider-calendar-intro" hidden aria-hidden="true">
         <div>
             <span class="provider-calendar-eyebrow">APPOINTMENT OVERVIEW</span>
@@ -188,6 +184,15 @@
                 <div class="provider-calendar-period-title">
                     <h3>{{ $periodTitle }}</h3>
                     <span>{{ number_format($appointmentCount) }} appointments</span>
+                </div>
+                <div class="provider-calendar-zoom-controls" role="group" aria-label="Calendar time scale">
+                    <button type="button" data-calendar-zoom-out aria-label="Zoom out to one hour intervals" title="Show one hour intervals" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14"></path></svg>
+                    </button>
+                    <button type="button" data-calendar-zoom-in aria-label="Zoom in to thirty minute intervals" title="Show 30 minute intervals">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    </button>
+                    <span class="provider-calendar-zoom-status" data-calendar-zoom-label aria-live="polite">1 hour</span>
                 </div>
             </div>
 
@@ -305,14 +310,12 @@
                 $schedulerStartHour = max(0, min(7, (int) floor(($dayTimelineBounds->min('start') ?? (7 * 60)) / 60)));
                 $schedulerEndHour = min(24, max(22, (int) ceil(($dayTimelineBounds->max('end') ?? (22 * 60)) / 60)));
                 $schedulerTimeMarkers = range($schedulerStartHour * 60, $schedulerEndHour * 60, $schedulerIntervalMinutes);
-                $schedulerTimelineHeight = ($schedulerEndHour - $schedulerStartHour) * $schedulerHourHeight;
-                $schedulerHeight = $schedulerTimelineHeight + $schedulerTopPadding + $schedulerBottomPadding;
-                $schedulerMarkers = collect($schedulerTimeMarkers)->map(function ($markerMinutes) use ($schedulerStartHour, $schedulerTopPadding, $schedulerHourHeight) {
+                $schedulerMarkers = collect($schedulerTimeMarkers)->map(function ($markerMinutes) use ($schedulerStartHour) {
                     $minute = $markerMinutes % 60;
 
                     return (object) [
                         'label' => sprintf('%02d:%02d', intdiv($markerMinutes, 60), $minute),
-                        'top' => round($schedulerTopPadding + ((($markerMinutes - ($schedulerStartHour * 60)) / 60) * $schedulerHourHeight), 2),
+                        'offset' => round(($markerMinutes - ($schedulerStartHour * 60)) / 60, 4),
                         'class' => $minute === 30 ? 'is-half-hour' : 'is-full-hour',
                     ];
                 });
@@ -336,7 +339,7 @@
                 })->sortBy('start')->values();
 
                 $dayEventLayout = [];
-                foreach ($preparedDayEvents->groupBy('resource_key') as $resourceEvents) {
+                foreach (collect([$preparedDayEvents]) as $resourceEvents) {
                     $dayEventClusters = [];
                     $activeCluster = [];
                     $activeClusterEnd = null;
@@ -383,64 +386,62 @@
                         }
                     }
                 }
+                $dayMaxLanes = max(1, collect($dayEventLayout)->max('lanes') ?? 1);
             @endphp
-            <div class="provider-resource-scheduler is-day is-single-day is-staff-day" style="--resource-count: {{ $schedulerResourceCount }}; --scheduler-height: {{ $schedulerHeight }}px; --scheduler-top-padding: {{ $schedulerTopPadding }}px; --hour-height: {{ $schedulerHourHeight }}px; --half-hour-height: {{ $schedulerHourHeight / 2 }}px;">
+            <div class="provider-resource-scheduler is-day is-single-day" style="--resource-count: 1; --scheduler-top-padding: {{ $schedulerTopPadding }}px; --scheduler-bottom-padding: {{ $schedulerBottomPadding }}px; --scheduler-height-hour: {{ (($schedulerEndHour - $schedulerStartHour) * 168) + $schedulerTopPadding + $schedulerBottomPadding }}px; --scheduler-height-half-hour: {{ (($schedulerEndHour - $schedulerStartHour) * 240) + $schedulerTopPadding + $schedulerBottomPadding }}px; --day-grid-min-width: {{ max(656, ($dayMaxLanes * 252) + 36) }}px;">
                 <div class="provider-resource-scheduler-scroll">
-                    <div class="provider-resource-day-head">
+                    <div class="provider-resource-day-head is-single-day">
                         <div class="provider-resource-corner">Time</div>
-                        @foreach ($schedulerResources as $resource)
-                            @php
-                                $resourceEntries = $preparedDayEvents->where('resource_key', $resource->key);
-                                $resourceRole = $resource->staff?->role;
-                            @endphp
-                            <div class="provider-resource-staff-head calendar-resource-tone-{{ $calendarResourceTones[$loop->index % count($calendarResourceTones)] }}">
-                                <span>{{ $initial($resource->name, 'S') }}</span>
-                                <strong>{{ $resource->name }}</strong>
-                                <small>{{ $resourceRole ? $resourceRole . ' · ' : '' }}{{ $resourceEntries->count() }} {{ Str::plural('booking', $resourceEntries->count()) }}</small>
+                        <div class="provider-resource-single-day-head">
+                            <div>
+                                <strong>All Appointments</strong>
+                                <small>{{ $preparedDayEvents->count() }} {{ Str::plural('booking', $preparedDayEvents->count()) }}</small>
                             </div>
-                        @endforeach
+                        </div>
                     </div>
 
-                    <div class="provider-resource-day-body">
+                    <div class="provider-resource-day-body is-single-day">
                         <aside class="provider-resource-time-axis" aria-hidden="true">
                             @foreach ($schedulerMarkers as $marker)
-                                <span class="{{ $marker->class }}" style="--time-top: {{ $marker->top }}px;">{{ $marker->label }}</span>
+                                <span class="{{ $marker->class }}" style="--time-top-hour: {{ round($schedulerTopPadding + ($marker->offset * 168), 2) }}px; --time-top-half-hour: {{ round($schedulerTopPadding + ($marker->offset * 240), 2) }}px;">{{ $marker->label }}</span>
                             @endforeach
                         </aside>
 
-                        <div class="provider-resource-day-grid">
+                        <div class="provider-resource-day-grid is-single-day">
                             @foreach ($schedulerMarkers as $marker)
-                                <i class="provider-resource-grid-line {{ $marker->class }}" style="--time-top: {{ $marker->top }}px;"></i>
+                                <i class="provider-resource-grid-line {{ $marker->class }}" style="--time-top-hour: {{ round($schedulerTopPadding + ($marker->offset * 168), 2) }}px; --time-top-half-hour: {{ round($schedulerTopPadding + ($marker->offset * 240), 2) }}px;"></i>
                             @endforeach
-                            @foreach ($schedulerResources as $resource)
-                            <div class="provider-resource-day-column calendar-resource-tone-{{ $calendarResourceTones[$loop->index % count($calendarResourceTones)] }}" data-staff-column="{{ $resource->key }}">
-                                @foreach ($preparedDayEvents->where('resource_key', $resource->key) as $preparedEvent)
+                            <div class="provider-resource-day-column is-single-day" data-appointment-column="all">
+                                @foreach ($preparedDayEvents as $preparedEvent)
                                     @php
                                         $entry = $preparedEvent['entry'];
                                         $entryStatus = $entry->booking->status ?? 'pending';
                                         $entryDuration = max(1, $preparedEvent['end'] - $preparedEvent['start']);
-                                        $eventTop = max($schedulerTopPadding, min($schedulerTopPadding + $schedulerTimelineHeight - 1, $schedulerTopPadding + ((($preparedEvent['start'] - ($schedulerStartHour * 60)) / 60) * $schedulerHourHeight)));
-                                        $eventHeight = max(1, min(($schedulerTopPadding + $schedulerTimelineHeight) - $eventTop, ($entryDuration / 60) * $schedulerHourHeight));
+                                        $eventOffset = max(0, ($preparedEvent['start'] - ($schedulerStartHour * 60)) / 60);
+                                        $eventDurationHours = $entryDuration / 60;
                                         $eventLayout = $dayEventLayout[$preparedEvent['key']] ?? ['lane' => 0, 'lanes' => 1];
-                                        $eventWidth = 100 / $eventLayout['lanes'];
-                                        $eventLeft = $eventLayout['lane'] * $eventWidth;
+                                        $eventTone = $calendarResourceTones[$loop->index % count($calendarResourceTones)];
+                                        $eventTopHour = $schedulerTopPadding + ($eventOffset * 168) + 2;
+                                        $eventTopHalfHour = $schedulerTopPadding + ($eventOffset * 240) + 2;
+                                        $eventHeightHour = max(1, ($eventDurationHours * 168) - 4);
+                                        $eventHeightHalfHour = max(1, ($eventDurationHours * 240) - 4);
+                                        $eventLeft = 16 + ($eventLayout['lane'] * 252);
                                     @endphp
                                     <button
                                         type="button"
-                                        class="provider-resource-event {{ $statusClass($entryStatus) }} {{ $eventHeight < 34 ? 'is-compact' : '' }}"
-                                        style="--event-top: {{ round($eventTop, 2) }}px; --event-height: {{ round($eventHeight, 2) }}px; --event-left: calc({{ round($eventLeft, 4) }}% + 6px); --event-width: calc({{ round($eventWidth, 4) }}% - 12px);"
+                                        class="provider-resource-event {{ $statusClass($entryStatus) }} calendar-event-tone-{{ $eventTone }} {{ $entryDuration < 30 ? 'is-compact' : '' }}"
+                                        style="--event-top-hour: {{ round($eventTopHour, 2) }}px; --event-top-half-hour: {{ round($eventTopHalfHour, 2) }}px; --event-height-hour: {{ round($eventHeightHour, 2) }}px; --event-height-half-hour: {{ round($eventHeightHalfHour, 2) }}px; --event-left: {{ $eventLeft }}px;"
                                         data-calendar-date="{{ $schedulerDate }}"
                                         data-calendar-entry="{{ $preparedEvent['key'] }}"
                                         title="{{ $formatTime($entry->start_time) }} - {{ $preparedEvent['display_end'] }} {{ $entry->customer_name }} - {{ $serviceNames($entry) }}"
                                         aria-label="Open {{ $entry->customer_name }} appointment details"
                                     >
-                                        <strong>{{ $formatTime($entry->start_time) ?: 'Any time' }} - {{ $preparedEvent['display_end'] }} &middot; {{ $entry->customer_name }}</strong>
+                                        <strong>{{ $entry->customer_name }}</strong>
                                         <small>{{ $serviceNames($entry) }}</small>
+                                        <span class="provider-resource-event-meta"><span aria-hidden="true">{{ $initial($staffName($entry), 'S') }}</span>{{ $staffName($entry) }} &middot; {{ $formatTime($entry->start_time) ?: 'Any time' }}-{{ $preparedEvent['display_end'] }}</span>
                                     </button>
                                 @endforeach
                             </div>
-                            @endforeach
-
                         </div>
                     </div>
                 </div>
@@ -475,12 +476,14 @@
                                         @php
                                             $entryStatus = $entry->booking->status ?? 'pending';
                                             $entryStartMinutes = $minutesFromTime($entry->start_time) ?? ($schedulerStartHour * 60);
-                                            $weekEventTop = max(4, min(142, (($entryStartMinutes - ($schedulerStartHour * 60)) / (($schedulerEndHour - $schedulerStartHour) * 60)) * 150));
+                                            $weekEventPosition = max(0.02, min(0.88, ($entryStartMinutes - ($schedulerStartHour * 60)) / (($schedulerEndHour - $schedulerStartHour) * 60)));
+                                            $weekEventTopHour = 4 + ($weekEventPosition * 146);
+                                            $weekEventTopHalfHour = 4 + ($weekEventPosition * 266);
                                         @endphp
                                         <button
                                             type="button"
                                             class="provider-resource-week-event {{ $statusClass($entryStatus) }}"
-                                            style="--week-event-top: {{ round($weekEventTop, 2) }}px;"
+                                            style="--week-event-top-hour: {{ round($weekEventTopHour, 2) }}px; --week-event-top-half-hour: {{ round($weekEventTopHalfHour, 2) }}px;"
                                             data-calendar-date="{{ $agendaDate }}"
                                             data-calendar-entry="{{ $entryKey($entry) }}"
                                             title="{{ $formatTime($entry->start_time) }} {{ $entry->customer_name }} - {{ $serviceNames($entry) }}"
@@ -596,6 +599,15 @@
                                         $endTime = $modalEndMinutes !== null
                                             ? sprintf('%02d:%02d', intdiv($modalEndMinutes, 60), $modalEndMinutes % 60)
                                             : $formatTime($entry->estimated_end_time);
+                                        $customerGender = strtolower(trim((string) $entry->customer_gender));
+                                        $genderKind = in_array($customerGender, ['female', 'woman', 'perempuan'], true)
+                                            ? 'female'
+                                            : (in_array($customerGender, ['male', 'man', 'laki-laki', 'laki laki'], true) ? 'male' : 'neutral');
+                                        $genderLabel = match ($genderKind) {
+                                            'female' => 'Female',
+                                            'male' => 'Male',
+                                            default => 'Gender not provided',
+                                        };
                                     @endphp
                                     <article class="provider-calendar-modal-appointment" data-calendar-entry-card="{{ $entryKey($entry) }}">
                                         <div class="provider-calendar-appointment-time">
@@ -627,22 +639,60 @@
                                                 <span><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>{{ $money($entry->total_price) }}</span>
                                             </div>
 
-                                            <dl class="provider-calendar-customer-fields">
-                                                <div><dt>Staff</dt><dd>{{ $staffName($entry) }}</dd></div>
-                                                <div><dt>Duration</dt><dd>{{ $entry->total_duration ?: '—' }}{{ $entry->total_duration ? ' min' : '' }}</dd></div>
-                                                <div><dt>Booking type</dt><dd>{{ $statusLabel($booking->booking_type) }}</dd></div>
-                                                <div><dt>Gender</dt><dd>{{ $entry->customer_gender ? ucfirst($entry->customer_gender) : 'Not provided' }}</dd></div>
-                                                <div><dt>Age group</dt><dd>{{ $entry->participant_age_group ? ucfirst($entry->participant_age_group) : 'Not provided' }}</dd></div>
-                                                <div><dt>Email</dt><dd>{{ $entry->customer_email ?: 'Not provided' }}</dd></div>
-                                                <div><dt>Date of birth</dt><dd>{{ $entry->customer_date_of_birth ? Carbon::parse($entry->customer_date_of_birth)->format('d M Y') : 'Not provided' }}</dd></div>
-                                                <div><dt>Religion</dt><dd>{{ $entry->customer_religion ?: 'Not provided' }}</dd></div>
-                                                <div><dt>Allergies</dt><dd class="{{ $entry->customer_allergies ? 'has-alert' : '' }}">{{ $entry->customer_allergies ?: 'None provided' }}</dd></div>
-                                                @if ($entry->customer_address)
-                                                    <div class="is-wide"><dt>Address</dt><dd>{{ $entry->customer_address }}</dd></div>
-                                                @endif
-                                                <div><dt>Payment</dt><dd>{{ $statusLabel($booking->payment?->payment_type ?: 'unpaid') }} · {{ $statusLabel($booking->payment?->status ?: 'unpaid') }}</dd></div>
-                                                <div><dt>Booking total</dt><dd>{{ $money($booking->total_price) }}</dd></div>
-                                            </dl>
+                                            <div class="provider-calendar-detail-sections">
+                                                <section class="provider-calendar-detail-section">
+                                                    <header>
+                                                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18M8 14h3"></path></svg></span>
+                                                        <div><strong>Appointment</strong><small>Schedule and assignment</small></div>
+                                                    </header>
+                                                    <dl class="provider-calendar-customer-fields provider-calendar-appointment-fields">
+                                                        <div><dt>Staff</dt><dd>{{ $staffName($entry) }}</dd></div>
+                                                        <div><dt>Duration</dt><dd>{{ $entry->total_duration ?: '—' }}{{ $entry->total_duration ? ' min' : '' }}</dd></div>
+                                                        <div><dt>Booking type</dt><dd>{{ $statusLabel($booking->booking_type) }}</dd></div>
+                                                        <div class="provider-calendar-gender-field">
+                                                            <dt>Gender</dt>
+                                                            <dd>
+                                                                @if ($genderKind === 'female' || $genderKind === 'male')
+                                                                    <span class="provider-calendar-gender-icon is-{{ $genderKind }}" role="img" aria-label="Gender: {{ $genderLabel }}" title="{{ $genderLabel }}">
+                                                                    @if ($genderKind === 'female')
+                                                                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="5"></circle><path d="M12 13v9M8 18h8"></path></svg>
+                                                                    @else
+                                                                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="15" r="5"></circle><path d="m12.5 11.5 6-6M14 5h5v5"></path></svg>
+                                                                    @endif
+                                                                    </span>
+                                                                @else
+                                                                    <span class="provider-calendar-empty-value">Not provided</span>
+                                                                @endif
+                                                            </dd>
+                                                        </div>
+                                                    </dl>
+                                                </section>
+
+                                                <section class="provider-calendar-detail-section">
+                                                    <header>
+                                                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg></span>
+                                                        <div><strong>Customer information</strong><small>Profile and service preferences</small></div>
+                                                    </header>
+                                                    <dl class="provider-calendar-customer-fields provider-calendar-profile-fields">
+                                                        <div><dt>Age group</dt><dd>{{ $entry->participant_age_group ? ucfirst($entry->participant_age_group) : 'Not provided' }}</dd></div>
+                                                        <div><dt>Email</dt><dd>{{ $entry->customer_email ?: 'Not provided' }}</dd></div>
+                                                        <div><dt>Date of birth</dt><dd>{{ $entry->customer_date_of_birth ? Carbon::parse($entry->customer_date_of_birth)->format('d M Y') : 'Not provided' }}</dd></div>
+                                                        <div><dt>Religion</dt><dd>{{ $entry->customer_religion ?: 'Not provided' }}</dd></div>
+                                                        <div class="is-wide"><dt>Allergies</dt><dd class="{{ $entry->customer_allergies ? 'has-alert' : '' }}">{{ $entry->customer_allergies ?: 'None provided' }}</dd></div>
+                                                        @if ($entry->customer_address)
+                                                            <div class="is-wide"><dt>Address</dt><dd>{{ $entry->customer_address }}</dd></div>
+                                                        @endif
+                                                    </dl>
+                                                </section>
+
+                                                <section class="provider-calendar-payment-summary">
+                                                    <div>
+                                                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"></rect><path d="M2 10h20M17 15h1"></path></svg></span>
+                                                        <div><small>Payment</small><strong>{{ $statusLabel($booking->payment?->payment_type ?: 'unpaid') }} &middot; {{ $statusLabel($booking->payment?->status ?: 'unpaid') }}</strong></div>
+                                                    </div>
+                                                    <div class="provider-calendar-payment-total"><small>Booking total</small><strong>{{ $money($booking->total_price) }}</strong></div>
+                                                </section>
+                                            </div>
 
                                             @if ($entry->participant_description)
                                                 <div class="provider-calendar-appointment-note"><strong>Customer / participant information</strong><p>{{ $entry->participant_description }}</p></div>
@@ -680,6 +730,45 @@
             calendar.dataset.calendarReady = 'true';
             let activeModal = null;
             let activeTrigger = null;
+            const zoomOutButton = calendar.querySelector('[data-calendar-zoom-out]');
+            const zoomInButton = calendar.querySelector('[data-calendar-zoom-in]');
+            const zoomLabel = calendar.querySelector('[data-calendar-zoom-label]');
+
+            const applyCalendarZoom = (zoom, persist = true) => {
+                const nextZoom = zoom === 'half-hour' ? 'half-hour' : 'hour';
+                const schedulerScroll = calendar.querySelector('.provider-resource-scheduler-scroll');
+                const oldScrollHeight = schedulerScroll?.scrollHeight || 0;
+                const oldScrollTop = schedulerScroll?.scrollTop || 0;
+
+                calendar.dataset.calendarZoom = nextZoom;
+                if (zoomLabel) zoomLabel.textContent = nextZoom === 'half-hour' ? '30 min' : '1 hour';
+                if (zoomOutButton) zoomOutButton.disabled = nextZoom === 'hour';
+                if (zoomInButton) zoomInButton.disabled = nextZoom === 'half-hour';
+
+                if (persist) {
+                    try {
+                        window.localStorage.setItem('provider-calendar-zoom', nextZoom);
+                    } catch (error) {
+                        // The calendar still works when browser storage is unavailable.
+                    }
+                }
+
+                if (schedulerScroll && oldScrollHeight > 0) {
+                    window.requestAnimationFrame(() => {
+                        schedulerScroll.scrollTop = oldScrollTop * (schedulerScroll.scrollHeight / oldScrollHeight);
+                    });
+                }
+            };
+
+            let savedZoom = 'hour';
+            try {
+                savedZoom = window.localStorage.getItem('provider-calendar-zoom') || 'hour';
+            } catch (error) {
+                savedZoom = 'hour';
+            }
+            applyCalendarZoom(savedZoom, false);
+            zoomOutButton?.addEventListener('click', () => applyCalendarZoom('hour'));
+            zoomInButton?.addEventListener('click', () => applyCalendarZoom('half-hour'));
 
             const filterModalAppointments = (modal, entryKey = '') => {
                 const cards = [...modal.querySelectorAll('[data-calendar-entry-card]')];
