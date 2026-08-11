@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Modules\Booking\Infrastructure\Persistence\Models\Booking;
-use App\Modules\Customer\Infrastructure\Persistence\Models\CustomerProfile;
-use App\Modules\Payment\Infrastructure\Persistence\Models\Payment;
 use App\Modules\Branch\Infrastructure\Persistence\Models\ProviderBranch;
+use App\Modules\Catalog\Infrastructure\Persistence\Models\Service;
+use App\Modules\Customer\Infrastructure\Persistence\Models\CustomerProfile;
+use App\Modules\Identity\Infrastructure\Persistence\Models\User;
+use App\Modules\Payment\Infrastructure\Persistence\Models\Payment;
 use App\Modules\Provider\Infrastructure\Persistence\Models\ProviderProfile;
 use App\Modules\Staff\Infrastructure\Persistence\Models\ProviderStaff;
-use App\Modules\Catalog\Infrastructure\Persistence\Models\Service;
-use App\Modules\Identity\Infrastructure\Persistence\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -150,7 +150,7 @@ class ProviderGroupBookingDisplayTest extends TestCase
                 'booking_type' => 'scheduled',
                 'total_price' => 100000,
                 'total_duration' => 60,
-                'customer_name' => $code . ' Customer',
+                'customer_name' => $code.' Customer',
                 'customer_phone' => '081200000000',
                 'participant_count' => 1,
                 'status' => 'confirmed',
@@ -304,7 +304,7 @@ class ProviderGroupBookingDisplayTest extends TestCase
         $response
             ->assertSee('data-appointment-column="all"', false)
             ->assertSee('All Appointments')
-            ->assertSee('data-calendar-entry="booking-' . $booking->id . '-participant-1"', false)
+            ->assertSee('data-calendar-entry="booking-'.$booking->id.'-participant-1"', false)
             ->assertSee('--scheduler-top-padding: 20px', false)
             ->assertSee('--scheduler-height-hour: 2560px', false)
             ->assertSee('is-full-hour" style="--time-top-hour: 20px; --time-top-half-hour: 20px;">07:00', false)
@@ -317,7 +317,7 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->assertSee('10:00 - 11:30')
             ->assertSee('11:30 - 12:30')
             ->assertDontSee('provider-resource-now-line', false)
-            ->assertSee('data-calendar-entry-card="booking-' . $booking->id . '-participant-1"', false)
+            ->assertSee('data-calendar-entry-card="booking-'.$booking->id.'-participant-1"', false)
             ->assertSee('filterModalAppointments', false)
             ->assertSee('is-single-appointment', false)
             ->assertSee('Hair Spa Group')

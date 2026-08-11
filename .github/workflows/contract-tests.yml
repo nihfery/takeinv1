@@ -27,9 +27,28 @@ jobs:
   openapi-route-parity:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: salonku_contract_testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     env:
       APP_ENV: testing
       CACHE_STORE: array
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_DATABASE: salonku_contract_testing
+      DB_USERNAME: root
+      DB_PASSWORD: ""
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
     steps:
@@ -52,6 +71,10 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend/laravel-core
         run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare the contract database
+        working-directory: backend/laravel-core
+        run: php artisan migrate --force --no-interaction
 
       - name: Validate seven OpenAPI documents against Laravel routes
         run: php tests/contract/validate-openapi.php

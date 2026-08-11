@@ -2,7 +2,7 @@ FROM php:8.3-fpm
 
 ARG PHPREDIS_VERSION=6.3.0
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     git unzip gzip default-mysql-client \
     libzip-dev libpng-dev libonig-dev libxml2-dev \
     libjpeg-dev libfreetype6-dev \
