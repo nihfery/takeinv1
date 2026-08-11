@@ -1372,6 +1372,61 @@ function categoryIcon(slug) {
     })[slug] || Store;
 }
 
+let freshTaxonomyRequest = null;
+
+function requestFreshServiceTaxonomy() {
+    if (!freshTaxonomyRequest) {
+        freshTaxonomyRequest = fetch('/api/categories?hierarchy=1&per_page=100', {
+            headers: { Accept: 'application/json' },
+        })
+            .then((response) => response.ok ? response.json() : null)
+            .then((payload) => {
+                const groups = Array.isArray(payload?.data)
+                    ? payload.data.filter((group) => (
+                        !group?.parent_id
+                        && Array.isArray(group?.children)
+                        && group.children.length
+                    ))
+                    : [];
+
+                return groups.length ? groups : fallbackServiceTaxonomy;
+            })
+            .catch(() => fallbackServiceTaxonomy);
+    }
+
+    return freshTaxonomyRequest;
+}
+
+function useFreshServiceTaxonomy() {
+    const [taxonomy, setTaxonomy] = useState(fallbackServiceTaxonomy);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        requestFreshServiceTaxonomy().then((groups) => {
+            if (!cancelled) setTaxonomy(groups);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    return taxonomy;
+}
+
+function subcategorySearchPath(category, subcategory) {
+    const query = new URLSearchParams();
+
+    query.set('service', subcategory.name);
+    query.set('category', category.slug);
+    query.set('subcategory', subcategory.slug);
+    if (category.id) query.set('category_id', category.id);
+    if (subcategory.id) query.set('subcategory_id', subcategory.id);
+
+    return `/search?${query.toString()}`;
+}
+
 const categoryLinks = fallbackServiceTaxonomy.flatMap((group) => {
     const icon = categoryIcon(group.slug);
     return group.children.map((item) => ({ label: item.name, service: item.name, icon }));
@@ -1596,30 +1651,7 @@ function freshUseLocalizedUrl(url) {
 }
 
 function FreshCategoryTiles() {
-    const [taxonomy, setTaxonomy] = useState(fallbackServiceTaxonomy);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        fetch('/api/categories?hierarchy=1&per_page=100', { headers: { Accept: 'application/json' } })
-            .then((response) => response.ok ? response.json() : null)
-            .then((payload) => {
-                const groups = Array.isArray(payload?.data)
-                    ? payload.data.filter((group) => Array.isArray(group?.children) && group.children.length)
-                    : [];
-
-                if (!cancelled && groups.length) {
-                    setTaxonomy(groups);
-                }
-            })
-            .catch(() => {
-                // The seeded fallback keeps navigation usable while the API starts.
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    const taxonomy = useFreshServiceTaxonomy();
 
     return (
         <nav className="fresh-category-menu" aria-label="Browse service categories">
@@ -1651,6 +1683,114 @@ function FreshCategoryTiles() {
     );
 }
 
+function FreshNavbarCategoryMenu({ open, taxonomy, activeCategorySlug, onSelectCategory, onClose }) {
+    const activeCategory = taxonomy.find((group) => group.slug === activeCategorySlug) || null;
+    const activeSubcategories = Array.isArray(activeCategory?.children) ? activeCategory.children : [];
+
+    return (
+        <AnimatePresence initial={false}>
+            {open && (
+                <>
+                    <motion.button
+                        className="fresh-nav-category-scrim"
+                        type="button"
+                        aria-label="Close category menu"
+                        onClick={onClose}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
+                    />
+                    <motion.section
+                        className="fresh-nav-category-panel"
+                        id="fresh-nav-category-panel"
+                        aria-label="Service categories"
+                        initial={{ opacity: 0, x: '-50%', y: -12 }}
+                        animate={{ opacity: 1, x: '-50%', y: 0 }}
+                        exit={{ opacity: 0, x: '-50%', y: -8 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                        <div className="fresh-nav-category-head">
+                            <div>
+                                <span>Browse by category</span>
+                                <h2>What are you looking for?</h2>
+                            </div>
+                            <button type="button" aria-label="Close category menu" onClick={onClose}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="fresh-nav-category-grid">
+                            {taxonomy.map((group, index) => {
+                                const Icon = categoryIcon(group.slug);
+                                const subcategoryCount = Array.isArray(group.children) ? group.children.length : 0;
+                                const selected = group.slug === activeCategorySlug;
+
+                                return (
+                                    <button
+                                        className={cx(`tone-${(index % 4) + 1}`, selected && 'is-active')}
+                                        type="button"
+                                        key={group.id || group.slug}
+                                        aria-expanded={selected}
+                                        aria-controls="fresh-nav-subcategory-panel"
+                                        onClick={() => onSelectCategory(group.slug)}
+                                    >
+                                        <span className="fresh-nav-category-icon" aria-hidden="true">
+                                            <Icon size={21} strokeWidth={1.9} />
+                                        </span>
+                                        <span className="fresh-nav-category-copy">
+                                            <strong>{group.name}</strong>
+                                            <small>{subcategoryCount} subcategories</small>
+                                        </span>
+                                        <ChevronRight className="fresh-nav-category-arrow" size={18} aria-hidden="true" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <AnimatePresence mode="wait" initial={false}>
+                            {activeCategory && (
+                                <motion.div
+                                    className="fresh-nav-subcategory-panel"
+                                    id="fresh-nav-subcategory-panel"
+                                    key={activeCategory.slug}
+                                    initial={{ opacity: 0, height: 0, y: -6 }}
+                                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                                    exit={{ opacity: 0, height: 0, y: -4 }}
+                                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                >
+                                    <div className="fresh-nav-subcategory-head">
+                                        <div>
+                                            <span>{activeCategory.name}</span>
+                                            <strong>Choose a subcategory</strong>
+                                        </div>
+                                        <Link href={getCategoryPath(activeCategory)} onClick={onClose}>
+                                            View all {activeCategory.name}
+                                            <ArrowRight size={15} />
+                                        </Link>
+                                    </div>
+                                    <div className="fresh-nav-subcategory-grid">
+                                        {activeSubcategories.map((subcategory) => (
+                                            <Link
+                                                href={subcategorySearchPath(activeCategory, subcategory)}
+                                                key={subcategory.id || subcategory.slug}
+                                                onClick={onClose}
+                                            >
+                                                <span>{subcategory.name}</span>
+                                                <ArrowRight size={15} aria-hidden="true" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.section>
+                </>
+            )}
+        </AnimatePresence>
+    );
+}
+
 function FreshHeader({ onMenu, menuOpen, panelActive = menuOpen, onClose, session, sessionReady = true, searchSlot = null }) {
     // Session storage and the Sanctum cookie are only available after hydration.
     // Until both have been checked, do not render the guest controls: doing so
@@ -1660,7 +1800,15 @@ function FreshHeader({ onMenu, menuOpen, panelActive = menuOpen, onClose, sessio
     const displayName = sessionDisplayName(session);
     const avatarUrl = session?.user?.photo;
     const [isScrolled, setIsScrolled] = useState(false);
+    const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+    const [activeCategorySlug, setActiveCategorySlug] = useState('');
+    const taxonomy = useFreshServiceTaxonomy();
     const [, , , activityCount] = useCustomerSessionState();
+
+    const closeCategoryMenu = useCallback(() => {
+        setCategoryMenuOpen(false);
+        setActiveCategorySlug('');
+    }, []);
 
     useEffect(() => {
         function updateScrollState() {
@@ -1678,20 +1826,62 @@ function FreshHeader({ onMenu, menuOpen, panelActive = menuOpen, onClose, sessio
     }, []);
 
     const handleMenuButtonClick = useCallback(() => {
+        closeCategoryMenu();
+
         if (menuOpen) {
             onClose();
             return;
         }
 
         onMenu();
-    }, [menuOpen, onClose, onMenu]);
+    }, [closeCategoryMenu, menuOpen, onClose, onMenu]);
+
+    const handleCategoryButtonClick = useCallback(() => {
+        if (categoryMenuOpen) {
+            closeCategoryMenu();
+            return;
+        }
+
+        if (menuOpen) onClose();
+        setActiveCategorySlug('');
+        setCategoryMenuOpen(true);
+    }, [categoryMenuOpen, closeCategoryMenu, menuOpen, onClose]);
+
+    const handleBrandClick = useCallback(() => {
+        closeCategoryMenu();
+        if (menuOpen) onClose();
+    }, [closeCategoryMenu, menuOpen, onClose]);
+
+    useEffect(() => {
+        if (!categoryMenuOpen) return undefined;
+
+        function closeWithEscape(event) {
+            if (event.key === 'Escape') closeCategoryMenu();
+        }
+
+        document.addEventListener('keydown', closeWithEscape);
+        return () => document.removeEventListener('keydown', closeWithEscape);
+    }, [categoryMenuOpen, closeCategoryMenu]);
 
     return (
-        <header className={cx('fresh-nav', searchSlot && 'search-nav', isScrolled && 'is-scrolled', panelActive && 'has-panel')}>
+        <header className={cx('fresh-nav', searchSlot && 'search-nav', isScrolled && 'is-scrolled', (panelActive || categoryMenuOpen) && 'has-panel', categoryMenuOpen && 'has-category-panel')}>
             <div className="fresh-nav-inner">
-                <Link className={cx('fresh-brand fresh-brand-center', searchSlot && 'search-nav-brand')} href="/" aria-label="YouYaku home" onClick={menuOpen ? onClose : undefined}>
-                    <span className="fresh-brand-name">YouYaku</span>
-                </Link>
+                <div className="fresh-brand-cluster">
+                    <Link className={cx('fresh-brand fresh-brand-center', searchSlot && 'search-nav-brand')} href="/" aria-label="YouYaku home" onClick={handleBrandClick}>
+                        <span className="fresh-brand-name">YouYaku</span>
+                    </Link>
+                    <button
+                        className={cx('fresh-category-trigger', categoryMenuOpen && 'is-active')}
+                        type="button"
+                        aria-expanded={categoryMenuOpen}
+                        aria-controls="fresh-nav-category-panel"
+                        onClick={handleCategoryButtonClick}
+                    >
+                        <Grid size={17} strokeWidth={2} aria-hidden="true" />
+                        <span>Categories</span>
+                        <ChevronDown size={15} strokeWidth={2.2} aria-hidden="true" />
+                    </button>
+                </div>
 
                 {searchSlot ? (
                     <div className="nav-search-slot search-nav-slot">{searchSlot}</div>
@@ -1759,6 +1949,13 @@ function FreshHeader({ onMenu, menuOpen, panelActive = menuOpen, onClose, sessio
                     )}
                 </div>
             </div>
+            <FreshNavbarCategoryMenu
+                open={categoryMenuOpen}
+                taxonomy={taxonomy}
+                activeCategorySlug={activeCategorySlug}
+                onSelectCategory={setActiveCategorySlug}
+                onClose={closeCategoryMenu}
+            />
         </header>
     );
 }
