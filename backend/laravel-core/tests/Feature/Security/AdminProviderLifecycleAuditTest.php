@@ -6,6 +6,7 @@ use App\Modules\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Modules\Identity\Infrastructure\Persistence\Models\User;
 use App\Modules\Provider\Infrastructure\Persistence\Models\ProviderProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -43,11 +44,11 @@ class AdminProviderLifecycleAuditTest extends TestCase
         $this->assertSame([
             'document_status' => 'submitted',
             'status' => 'inactive',
-        ], $approval->before);
+        ], Arr::sortRecursive($approval->before));
         $this->assertSame([
             'document_status' => 'verified',
             'status' => 'active',
-        ], $approval->after);
+        ], Arr::sortRecursive($approval->after));
         $this->assertStringNotContainsString('provider/documents', $approval->toJson());
         $this->assertStringNotContainsString('1234567890123', $approval->toJson());
 
@@ -120,9 +121,9 @@ class AdminProviderLifecycleAuditTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame([
-            'status' => 'inactive',
             'document_status' => 'rejected',
-        ], $deletion->before);
+            'status' => 'inactive',
+        ], Arr::sortRecursive($deletion->before));
         $this->assertSame(['deleted' => true], $deletion->after);
         $this->assertSame($providerId, (int) $deletion->provider_id);
     }

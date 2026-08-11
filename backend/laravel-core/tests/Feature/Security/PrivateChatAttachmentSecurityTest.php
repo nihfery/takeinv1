@@ -11,6 +11,7 @@ use App\Modules\Media\Application\Services\ChatAttachmentStorage;
 use App\Modules\Provider\Infrastructure\Persistence\Models\ProviderProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -95,8 +96,8 @@ class PrivateChatAttachmentSecurityTest extends TestCase
             ->orderBy('id')
             ->get();
         $this->assertCount(2, $accessEvents);
-        $this->assertSame(['thread_id' => $thread->id, 'channel' => 'admin-web'], $accessEvents[0]->after);
-        $this->assertSame(['thread_id' => $thread->id, 'channel' => 'provider-web'], $accessEvents[1]->after);
+        $this->assertSame(['channel' => 'admin-web', 'thread_id' => $thread->id], Arr::sortRecursive($accessEvents[0]->after));
+        $this->assertSame(['channel' => 'provider-web', 'thread_id' => $thread->id], Arr::sortRecursive($accessEvents[1]->after));
         $this->assertStringNotContainsString('chat-images/', $accessEvents->toJson());
         $this->assertStringNotContainsString('private.png', $accessEvents->toJson());
 
