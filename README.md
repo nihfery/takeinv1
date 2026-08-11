@@ -71,14 +71,17 @@ untuk membuat secret lokal. Port `8000`, `5173`, `5174`, dan `8080` harus bebas.
    docker compose --env-file .env exec --user www-data backend php artisan app:deployment-check
    ```
 
-5. Opsional, isi data demo hanya pada database lokal baru:
+5. Opsional, pulihkan snapshot data demo hanya pada database testing:
 
    ```bash
    docker compose --env-file .env exec --user www-data backend php artisan db:seed --force
    ```
 
-   Seeder demo tidak boleh dijalankan pada staging atau production. Login lokal
-   yang dibuat seeder: admin `admin@gmail.com` / `admin12345`; provider contoh
+   Seeder ini menghapus seluruh data tabel aplikasi selain riwayat `migrations`,
+   lalu memulihkan snapshot `database/seeders/data/youyaku.sql`. Jangan jalankan
+   pada database staging atau production yang menyimpan data nyata. Snapshot
+   menyediakan 20 provider, 100 cabang, 750 layanan, dan 20 booking. Login demo:
+   admin `admin@gmail.com` / `admin12345`; provider contoh
    `provider-cantika-beauty-salon@directory.test` / `salon12345`; customer
    `customer@gmail.com` / `customer12345`.
 
