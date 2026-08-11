@@ -551,7 +551,8 @@ docker compose --env-file .env exec --user www-data backend php artisan app:depl
 
 Insert the generated values into the ignored `.env`: one Laravel `APP_KEY` and
 distinct MySQL user, MySQL root, and Redis passwords. Do not paste them into a
-commit or shared log. Optional demo seeding is local-only:
+commit or shared log. Optional snapshot seeding is testing-only and replaces
+all application table data except the Laravel migration history:
 
 ```powershell
 docker compose --env-file .env exec --user www-data backend php artisan db:seed --force

@@ -8,10 +8,12 @@ $dockerfile = Get-Content -LiteralPath (Join-Path $repositoryRoot 'backend\larav
 $entrypoint = Get-Content -LiteralPath (Join-Path $repositoryRoot 'platform\docker\laravel-entrypoint.sh') -Raw
 $fpmConfig = Get-Content -LiteralPath (Join-Path $repositoryRoot 'platform\docker\php-fpm-production.conf') -Raw
 $compose = Get-Content -LiteralPath (Join-Path $repositoryRoot 'docker-compose.yml') -Raw
+$composeOverride = Get-Content -LiteralPath (Join-Path $repositoryRoot 'docker-compose.override.yml') -Raw
 $httpNginx = Get-Content -LiteralPath (Join-Path $repositoryRoot 'platform\gateway\backend-http\nginx.conf') -Raw
 $reverbNginx = Get-Content -LiteralPath (Join-Path $repositoryRoot 'platform\gateway\nginx\nginx.conf') -Raw
 $backendBlock = [regex]::Match($compose, '(?ms)^  backend:\r?\n.*?(?=^  [a-zA-Z0-9][a-zA-Z0-9-]*:\r?\n|\z)').Value
 $backendHttpBlock = [regex]::Match($compose, '(?ms)^  backend-http:\r?\n.*?(?=^  [a-zA-Z0-9][a-zA-Z0-9-]*:\r?\n|\z)').Value
+$backendHttpOverrideBlock = [regex]::Match($composeOverride, '(?ms)^  backend-http:\r?\n.*?(?=^  [a-zA-Z0-9][a-zA-Z0-9-]*:\r?\n|\z)').Value
 
 function Assert-Matches {
     param(
@@ -49,7 +51,9 @@ Assert-Matches $entrypoint 'chown -R --no-dereference www-data:www-data' 'Persis
 Assert-Matches $fpmConfig '(?m)^access\.log\s*=\s*/dev/null\s*$' 'FPM request logging must be disabled so signed query tokens cannot leak.'
 
 Assert-Matches $backendBlock 'php -r .*?fsockopen.*?9000' 'Backend healthcheck must probe the private FPM listener.'
-Assert-Matches $backendHttpBlock '(?s)BACKEND_HOST_PORT.*?:8080.*?youyaku_storage:/var/www/html/storage:ro' 'backend-http must own the legacy host port and mount shared storage read-only.'
+Assert-Matches $backendHttpBlock '(?s)expose:.*?"8080".*?youyaku_storage:/var/www/html/storage:ro' 'backend-http must expose its internal HTTP port and mount shared storage read-only.'
+Assert-DoesNotMatch $backendHttpBlock '(?m)^\s+ports:' 'The production HTTP service must not publish a host port.'
+Assert-Matches $backendHttpOverrideBlock 'BACKEND_HOST_PORT.*?:8080' 'The local Compose override must publish the legacy backend HTTP port.'
 Assert-DoesNotMatch $backendBlock '(?m)^\s+ports:' 'The private FPM service must not publish any host port.'
 Assert-Matches $compose 'BACKEND_PROXY_URL: http://backend-http:8080' 'Next builds must proxy through the HTTP frontend.'
 

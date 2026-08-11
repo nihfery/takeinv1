@@ -23,11 +23,12 @@ menghapus ketiga volume tersebut.
    - provider: service `provider`, container port `3000`;
    - customer: service `customer`, container port `5174`.
 
-   Compose mengikat host port HTTP Laravel lama (`8000`) ke `127.0.0.1` secara
-   default melalui service `backend-http`. Traefik mengakses container port
-   `8080` service tersebut melalui network Compose. Listener FastCGI
-   `backend:9000` tidak dipublikasikan. Port frontend dapat diubah melalui
-   `PROVIDER_HOST_PORT` dan `CUSTOMER_HOST_PORT`.
+   Compose production tidak memublikasikan host port untuk service aplikasi.
+   Traefik mengakses container port masing-masing melalui network Compose.
+   Listener FastCGI `backend:9000` juga tetap internal dan tidak boleh diberi
+   domain. Pemetaan port `8000`, `8080`, `5173`, dan `5174` hanya tersedia pada
+   `docker-compose.override.yml` untuk pengembangan lokal; Dokploy menjalankan
+   `docker-compose.yml` secara eksplisit sehingga override lokal tidak terpakai.
 5. Jalankan **Deploy**. Hanya entrypoint service `backend` yang menjalankan:
 
    ```sh
@@ -62,11 +63,10 @@ secret disuntikkan oleh Dokploy/Compose; jangan menambahkan `.env` ke Dockerfile
 atau menghapus pola proteksi `.dockerignore`.
 
 Gunakan domain HTTPS melalui Dokploy/Traefik sejak deployment pertama. Jangan
-mengubah `BACKEND_BIND_ADDRESS` menjadi `0.0.0.0` di production. Nilai
-`TRUSTED_PROXIES=*` hanya aman selama invariant ini dijaga: firewall dan mapping
-Compose tidak menyediakan jalur langsung menuju origin Laravel. Bila topology
-berubah, isi `TRUSTED_PROXIES` dengan IP/CIDR proxy yang eksplisit sebelum origin
-dibuka.
+menambahkan host-port mapping untuk `backend-http` di production. Nilai
+`TRUSTED_PROXIES=*` hanya aman selama invariant ini dijaga: firewall dan Compose
+tidak menyediakan jalur langsung menuju origin Laravel. Bila topology berubah,
+isi `TRUSTED_PROXIES` dengan IP/CIDR proxy yang eksplisit sebelum origin dibuka.
 
 Biarkan `OBSERVABILITY_TRUST_INBOUND_IDS=false` sampai ingress HTTP terbukti
 menghapus header `X-Request-ID` dan `X-Correlation-ID` dari klien lalu menimpa
