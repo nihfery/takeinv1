@@ -2,6 +2,13 @@ services:
   # Local-only host ports. Dokploy invokes docker-compose.yml explicitly, so
   # these bindings are not applied in production where Traefik reaches each
   # service through its internal Compose network.
+  db:
+    ports:
+      - "${DB_BIND_ADDRESS:-127.0.0.1}:${DB_HOST_PORT:-3306}:3306"
+    networks:
+      - youyaku_net
+      - youyaku_data
+
   backend-http:
     ports:
       - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_HOST_PORT:-8000}:8080"

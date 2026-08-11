@@ -185,15 +185,17 @@
                     <h3>{{ $periodTitle }}</h3>
                     <span>{{ number_format($appointmentCount) }} appointments</span>
                 </div>
-                <div class="provider-calendar-zoom-controls" role="group" aria-label="Calendar time scale">
-                    <button type="button" data-calendar-zoom-out aria-label="Zoom out to one hour intervals" title="Show one hour intervals" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14"></path></svg>
-                    </button>
-                    <button type="button" data-calendar-zoom-in aria-label="Zoom in to thirty minute intervals" title="Show 30 minute intervals">
-                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                    </button>
-                    <span class="provider-calendar-zoom-status" data-calendar-zoom-label aria-live="polite">1 hour</span>
-                </div>
+                @if ($calendarView === 'today')
+                    <div class="provider-calendar-zoom-controls" role="group" aria-label="Calendar time scale">
+                        <button type="button" data-calendar-zoom-out aria-label="Zoom out to one hour intervals" title="Show one hour intervals" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14"></path></svg>
+                        </button>
+                        <button type="button" data-calendar-zoom-in aria-label="Zoom in to thirty minute intervals" title="Show 30 minute intervals">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                        </button>
+                        <span class="provider-calendar-zoom-status" data-calendar-zoom-label aria-live="polite">1 hour</span>
+                    </div>
+                @endif
             </div>
 
             <div class="provider-month-calendar-tools">
@@ -733,6 +735,7 @@
             const zoomOutButton = calendar.querySelector('[data-calendar-zoom-out]');
             const zoomInButton = calendar.querySelector('[data-calendar-zoom-in]');
             const zoomLabel = calendar.querySelector('[data-calendar-zoom-label]');
+            const supportsCalendarZoom = calendar.dataset.calendarView === 'today';
 
             const applyCalendarZoom = (zoom, persist = true) => {
                 const nextZoom = zoom === 'half-hour' ? 'half-hour' : 'hour';
@@ -761,10 +764,12 @@
             };
 
             let savedZoom = 'hour';
-            try {
-                savedZoom = window.localStorage.getItem('provider-calendar-zoom') || 'hour';
-            } catch (error) {
-                savedZoom = 'hour';
+            if (supportsCalendarZoom) {
+                try {
+                    savedZoom = window.localStorage.getItem('provider-calendar-zoom') || 'hour';
+                } catch (error) {
+                    savedZoom = 'hour';
+                }
             }
             applyCalendarZoom(savedZoom, false);
             zoomOutButton?.addEventListener('click', () => applyCalendarZoom('hour'));

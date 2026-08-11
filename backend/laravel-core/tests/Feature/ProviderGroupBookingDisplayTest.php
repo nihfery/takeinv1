@@ -184,8 +184,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->assertSee('provider-resource-scheduler is-day', false)
             ->assertSee('provider-resource-single-day-head', false)
             ->assertSee('data-appointment-column="all"', false)
-            ->assertSee('data-calendar-zoom-out', false)
-            ->assertSee('data-calendar-zoom-in', false)
+            ->assertSee('<button type="button" data-calendar-zoom-out', false)
+            ->assertSee('<button type="button" data-calendar-zoom-in', false)
             ->assertSee('class="active">Day</a>', false);
         $this->assertSame([$selectedDay->id], $bookingIds($todayResponse));
 
@@ -194,8 +194,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'week', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-resource-scheduler is-week', false)
-            ->assertSee('data-calendar-zoom-out', false)
-            ->assertSee('data-calendar-zoom-in', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-out', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-in', false)
             ->assertSee('class="active">7 Days</a>', false);
         $this->assertSame([$selectedDay->id, $seventhDay->id], $bookingIds($weekResponse));
 
@@ -204,8 +204,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'month', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-month-calendar-grid', false)
-            ->assertSee('data-calendar-zoom-out', false)
-            ->assertSee('data-calendar-zoom-in', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-out', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-in', false)
             ->assertSee('class="active">Month</a>', false);
         $this->assertSame([$selectedDay->id, $seventhDay->id, $eighthDay->id], $bookingIds($monthResponse));
 
@@ -214,8 +214,8 @@ class ProviderGroupBookingDisplayTest extends TestCase
             ->get(route('provider.calendar.index', ['view' => 'year', 'date' => '2026-05-10']))
             ->assertOk()
             ->assertSee('provider-calendar-year-grid', false)
-            ->assertSee('data-calendar-zoom-out', false)
-            ->assertSee('data-calendar-zoom-in', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-out', false)
+            ->assertDontSee('<button type="button" data-calendar-zoom-in', false)
             ->assertSee('class="active">Year</a>', false);
         $this->assertSame(
             [$selectedDay->id, $seventhDay->id, $eighthDay->id, $nextMonth->id, $sameYear->id],
