@@ -102,8 +102,8 @@ export default function AuthPage() {
                     remember,
                 });
 
-            saveUserProfile(auth.profile);
             setSessionUser({ loggedIn: true, user: auth.profile });
+            saveUserProfile(auth.profile);
             await redirectAfterAuthentication();
         } catch (authError) {
             setError(authError?.message || (isRegistering ? 'Pendaftaran gagal. Coba lagi.' : 'Login gagal. Periksa email dan password.'));

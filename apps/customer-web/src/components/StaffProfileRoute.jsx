@@ -3,14 +3,21 @@
 import { useEffect, useState } from 'react';
 import { getPublicStaffProfile } from '../lib/auth-api.js';
 import { getStaffProfileSnapshot } from '../lib/mock-state.js';
+import { PROVIDER_FRONTEND_URL } from '../lib/app-urls.js';
 import { StaffProfileView } from './StaffProfileView.jsx';
 
-export function StaffProfileRoute({ staffId }) {
-    const [profile, setProfile] = useState(null);
-    const [status, setStatus] = useState('loading');
+export function StaffProfileRoute({ staffId, initialProfile = null }) {
+    const [profile, setProfile] = useState(initialProfile);
+    const [status, setStatus] = useState(initialProfile ? 'ready' : 'loading');
 
     useEffect(() => {
         let cancelled = false;
+        if (initialProfile?.branch && initialProfile?.staff) {
+            setProfile(initialProfile);
+            setStatus('ready');
+            return undefined;
+        }
+
         const snapshot = getStaffProfileSnapshot(staffId);
 
         if (snapshot?.branch && snapshot?.staff) {
@@ -44,10 +51,10 @@ export function StaffProfileRoute({ staffId }) {
         return () => {
             cancelled = true;
         };
-    }, [staffId]);
+    }, [staffId, initialProfile]);
 
     if (status === 'ready' && profile) {
-        return <StaffProfileView branch={profile.branch} staff={profile.staff} services={profile.services} customerAppUrl="/" />;
+        return <StaffProfileView branch={profile.branch} staff={profile.staff} services={profile.services} providerUrl={PROVIDER_FRONTEND_URL} customerAppUrl="/" />;
     }
 
     return (

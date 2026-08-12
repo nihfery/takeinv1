@@ -9,6 +9,7 @@ use App\Modules\Catalog\Infrastructure\Persistence\Models\ServiceCategory;
 use App\Modules\Identity\Infrastructure\Persistence\Models\User;
 use App\Modules\Payment\Infrastructure\Gateways\Midtrans\MidtransService;
 use App\Modules\Payment\Infrastructure\Persistence\Models\Payment;
+use App\Modules\Promotion\Infrastructure\Persistence\Models\Coupon;
 use App\Modules\Provider\Infrastructure\Persistence\Models\ProviderProfile;
 use App\Modules\Review\Infrastructure\Persistence\Models\StaffReview;
 use App\Modules\Staff\Infrastructure\Persistence\Models\ProviderStaff;
@@ -20,6 +21,32 @@ use Tests\TestCase;
 class CustomerBookingTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_coupon_validation_prices_repeated_services_for_group_bookings(): void
+    {
+        [, $service] = $this->bookableBranchServiceAndStaff();
+        Coupon::query()->create([
+            'code' => 'GROUP20',
+            'product_type' => 'all',
+            'coupon_type' => 'percentage',
+            'coupon_value' => 20,
+            'quantity' => 20,
+            'used_count' => 0,
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addMonth()->toDateString(),
+            'status' => 'active',
+        ]);
+
+        $this->postJson(route('api.coupons.validate'), [
+            'coupon_code' => 'GROUP20',
+            'service_ids' => [$service->id, $service->id],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.subtotal', 200000)
+            ->assertJsonPath('data.eligible_subtotal', 200000)
+            ->assertJsonPath('data.discount_amount', 40000)
+            ->assertJsonPath('data.payable_amount', 168000);
+    }
 
     public function test_customer_booking_persists_booking_services_and_payment_rows(): void
     {

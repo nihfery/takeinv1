@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { FreshNavigation } from './LandingPage.jsx';
 import { getCategoryPath } from '../lib/service-taxonomy.js';
+import { PROVIDER_FRONTEND_URL } from '../lib/app-urls.js';
 
 function categoryIcon(slug) {
     return ({
@@ -38,7 +39,7 @@ export function CategoryDetailView({ category, taxonomy = [] }) {
 
     return (
         <div className="fresh-landing category-route-shell">
-            <FreshNavigation providerUrl="/provider" customerAppUrl="/" />
+            <FreshNavigation providerUrl={PROVIDER_FRONTEND_URL} customerAppUrl="/" />
 
             <main className="category-detail-page">
                 <section className={`category-detail-hero category-tone-${category.slug}`}>

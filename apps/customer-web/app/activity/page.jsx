@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FreshNavigation } from '../../src/components/LandingPage.jsx';
 import { saveUserProfile, setSessionUser } from '../../src/lib/mock-state.js';
 import { fetchCurrentCustomer, getCustomerActivity } from '../../src/lib/auth-api.js';
+import { PROVIDER_FRONTEND_URL } from '../../src/lib/app-urls.js';
 
 function formatPrice(value) {
     return `IDR ${Number(value || 0).toLocaleString('en-US')}`;
@@ -45,29 +46,31 @@ export default function ActivityPage() {
     const router = useRouter();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         let cancelled = false;
+        let redirecting = false;
 
         async function loadBookings() {
             try {
                 const auth = await fetchCurrentCustomer();
                 if (cancelled) return;
 
-                saveUserProfile(auth.profile);
                 setSessionUser({ loggedIn: true, user: auth.profile });
+                saveUserProfile(auth.profile);
 
                 const result = await getCustomerActivity();
                 if (!cancelled) {
                     setBookings(result.filter((activity) => activity.booking_id));
                 }
-            } catch (loadError) {
+            } catch {
                 if (!cancelled) {
-                    setError(loadError?.message || 'Your bookings could not be loaded.');
+                    redirecting = true;
+                    setSessionUser({ loggedIn: false, user: null });
+                    router.replace('/auth?next=/activity');
                 }
             } finally {
-                if (!cancelled) setLoading(false);
+                if (!cancelled && !redirecting) setLoading(false);
             }
         }
 
@@ -75,11 +78,11 @@ export default function ActivityPage() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [router]);
 
     return (
         <div className="fresh-landing activity-route-shell">
-            <FreshNavigation providerUrl="/provider" customerAppUrl="/" />
+            <FreshNavigation providerUrl={PROVIDER_FRONTEND_URL} customerAppUrl="/" />
             <main className="booking-container activity-page-container activity-simple-page">
                 <header className="activity-simple-header">
                     <span>Activity</span>
@@ -93,12 +96,7 @@ export default function ActivityPage() {
                             <p>Memuat booking...</p>
                         </div>
                     )}
-                    {!loading && error && (
-                        <div className="activity-service-list activity-empty-card">
-                            <p>{error}</p>
-                        </div>
-                    )}
-                    {!loading && !error && bookings.length === 0 && (
+                    {!loading && bookings.length === 0 && (
                         <div className="activity-service-list activity-empty-card">
                             <h3>No bookings yet</h3>
                             <p>Booking yang sudah dibuat akan ditampilkan di sini.</p>
@@ -107,7 +105,7 @@ export default function ActivityPage() {
                             </button>
                         </div>
                     )}
-                    {!loading && !error && bookings.map((booking) => (
+                    {!loading && bookings.map((booking) => (
                         <article className="activity-service-list activity-booking-card" key={booking.id}>
                             <div className="activity-service-row">
                                 <div>

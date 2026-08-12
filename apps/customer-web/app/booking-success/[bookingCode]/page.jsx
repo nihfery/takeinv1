@@ -39,6 +39,33 @@ function getStaffName(staff) {
     return staff.name || String(staff);
 }
 
+function calendarTimestamp(dateValue, timeValue, addMinutes = 0) {
+    const dateParts = String(dateValue || '').slice(0, 10).split('-').map(Number);
+    const timeParts = String(timeValue || '').slice(0, 5).split(':').map(Number);
+    if (dateParts.length !== 3 || timeParts.length !== 2 || [...dateParts, ...timeParts].some(Number.isNaN)) {
+        return '';
+    }
+
+    const date = new Date(
+        dateParts[0],
+        dateParts[1] - 1,
+        dateParts[2],
+        timeParts[0],
+        timeParts[1] + addMinutes
+    );
+    const pad = (value) => String(value).padStart(2, '0');
+
+    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+}
+
+function escapeCalendarText(value) {
+    return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\r?\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;');
+}
+
 export default function BookingSuccessPage({ params }) {
     const { bookingCode } = use(params);
     const router = useRouter();
@@ -146,7 +173,35 @@ export default function BookingSuccessPage({ params }) {
     const isPaid = ['Paid', 'paid'].includes(booking.paymentStatus);
 
     const handleAddToCalendar = () => {
-        alert('Appointment added to your Google & Apple calendars (simulation).');
+        const start = calendarTimestamp(booking.date, booking.time);
+        const end = calendarTimestamp(booking.date, booking.time, Math.max(15, Number(booking.duration || 60)));
+        if (!start || !end) return;
+
+        const serviceNames = services.map((service) => service.name).filter(Boolean).join(', ');
+        const calendar = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//YouYaku//Customer Booking//ID',
+            'CALSCALE:GREGORIAN',
+            'BEGIN:VEVENT',
+            `UID:${escapeCalendarText(booking.code)}@youyaku`,
+            `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
+            `DTSTART:${start}`,
+            `DTEND:${end}`,
+            `SUMMARY:${escapeCalendarText(`${serviceNames || 'Reservasi salon'} - ${booking.salonName || 'YouYaku'}`)}`,
+            `LOCATION:${escapeCalendarText(booking.salonAddress)}`,
+            `DESCRIPTION:${escapeCalendarText(`Kode booking: ${booking.code}`)}`,
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ].join('\r\n');
+        const downloadUrl = URL.createObjectURL(new Blob([calendar], { type: 'text/calendar;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `youyaku-${String(booking.code || 'booking').replace(/[^a-zA-Z0-9_-]/g, '-')}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
     };
 
     return (
@@ -266,7 +321,7 @@ export default function BookingSuccessPage({ params }) {
                         </div>
 
                         <div className="success-modern-actions">
-                            <button className="booking-action-btn" onClick={handleAddToCalendar}>
+                            <button type="button" className="booking-action-btn" onClick={handleAddToCalendar}>
                                 <Calendar size={16} />
                                 Tambahkan ke Kalender
                             </button>

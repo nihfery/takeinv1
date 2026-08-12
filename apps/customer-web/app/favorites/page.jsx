@@ -4,17 +4,39 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FreshNavigation } from '../../src/components/LandingPage.jsx';
 import { mockSalons, getFavoritesList, toggleFavoriteSalon } from '../../src/lib/mock-state.js';
+import { getPublicBranches } from '../../src/lib/auth-api.js';
+import { PROVIDER_FRONTEND_URL } from '../../src/lib/app-urls.js';
 import { getSalonPath } from '../../src/lib/salon-routes.js';
 import { Star, MapPin, Heart, ArrowRight, HeartCrack } from 'lucide-react';
 
 export default function FavoritesPage() {
     const router = useRouter();
     const [favorites, setFavorites] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    const loadFavorites = () => {
+    const loadFavorites = async () => {
         const favIds = getFavoritesList();
-        const savedSalons = mockSalons.filter(s => favIds.includes(s.id));
-        setFavorites(savedSalons);
+        setError('');
+
+        try {
+            const backendSalons = await getPublicBranches();
+            const salons = [...backendSalons, ...mockSalons];
+            const savedSalons = favIds
+                .map((favoriteId) => salons.find((salon) => String(salon.id) === String(favoriteId)))
+                .filter(Boolean);
+
+            setFavorites(savedSalons);
+        } catch (loadError) {
+            const fallbackSalons = mockSalons.filter((salon) => (
+                favIds.some((favoriteId) => String(favoriteId) === String(salon.id))
+            ));
+
+            setFavorites(fallbackSalons);
+            setError(loadError?.message || 'Daftar favorit belum dapat dimuat.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -23,19 +45,24 @@ export default function FavoritesPage() {
 
     const handleUnfavorite = (salonId) => {
         toggleFavoriteSalon(salonId);
-        loadFavorites();
+        setFavorites((current) => current.filter((salon) => String(salon.id) !== String(salonId)));
     };
 
     return (
         <div className="page-shell">
-            <FreshNavigation providerUrl="/provider" customerAppUrl="/" />
+            <FreshNavigation providerUrl={PROVIDER_FRONTEND_URL} customerAppUrl="/" />
             <main className="booking-container">
                 <h1 className="favorites-title">Salon Favorit Saya</h1>
                 <p className="favorites-subtitle">
                     Akses cepat ke salon, barbershop, dan spa langgananmu untuk pemesanan ulang instan.
                 </p>
 
-                {favorites.length > 0 ? (
+                {loading ? (
+                    <div className="fav-empty-state" role="status" aria-live="polite">
+                        <span className="booking-loading-indicator" aria-hidden="true"><span /><span /><span /></span>
+                        <p>Memuat salon favorit...</p>
+                    </div>
+                ) : favorites.length > 0 ? (
                     <div className="favorites-grid">
                         {favorites.map(salon => (
                             <div key={salon.id} className="fav-card">
@@ -114,6 +141,7 @@ export default function FavoritesPage() {
                         </button>
                     </div>
                 )}
+                {!loading && error && <p className="favorites-load-note" role="status">{error}</p>}
             </main>
         </div>
     );

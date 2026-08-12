@@ -3,8 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FreshNavigation, Footer } from '../../src/components/LandingPage.jsx';
-import { getUserProfile, saveUserProfile, setSessionUser } from '../../src/lib/mock-state.js';
+import {
+    getNotificationPreferences,
+    getUserProfile,
+    saveNotificationPreferences,
+    saveUserProfile,
+    setSessionUser,
+} from '../../src/lib/mock-state.js';
 import { fetchCurrentCustomer, updateCustomerProfile } from '../../src/lib/auth-api.js';
+import { PROVIDER_FRONTEND_URL } from '../../src/lib/app-urls.js';
 import { Calendar, ClipboardList, Heart, MessageCircle, Pencil, Plus, Settings, Trash2, User, Wallet } from 'lucide-react';
 
 const genderLabels = {
@@ -61,6 +68,7 @@ export default function ProfilePage() {
     const [emailAlerts, setEmailAlerts] = useState(true);
     const [waAlerts, setWaAlerts] = useState(true);
     const [promoNewsletter, setPromoNewsletter] = useState(false);
+    const [settingsMessage, setSettingsMessage] = useState('');
 
     const hydrateProfile = (p) => {
         if (!p) return;
@@ -88,8 +96,8 @@ export default function ProfilePage() {
 
                 if (cancelled) return;
 
-                saveUserProfile(auth.profile);
                 setSessionUser({ loggedIn: true, user: auth.profile });
+                saveUserProfile(auth.profile);
                 setAuthChecked(true);
                 const p = auth.profile || getUserProfile();
 
@@ -112,7 +120,16 @@ export default function ProfilePage() {
 
         const p = getUserProfile();
         hydrateProfile(p);
+        const preferences = getNotificationPreferences();
+        setEmailAlerts(preferences.emailAlerts);
+        setWaAlerts(preferences.waAlerts);
+        setPromoNewsletter(preferences.promoNewsletter);
     }, [authChecked]);
+
+    const handleNotificationSave = () => {
+        saveNotificationPreferences({ emailAlerts, waAlerts, promoNewsletter });
+        setSettingsMessage('Pengaturan notifikasi berhasil disimpan untuk akun ini.');
+    };
 
     const handleProfileSave = async () => {
         setIsSaving(true);
@@ -180,7 +197,7 @@ export default function ProfilePage() {
 
     return (
         <div className="page-shell profile-route-shell">
-            <FreshNavigation providerUrl="/provider" customerAppUrl="/" />
+            <FreshNavigation providerUrl={PROVIDER_FRONTEND_URL} customerAppUrl="/" />
             <main className="booking-container">
                 <div className="profile-grid">
                     {/* Left Side Navigation Menu */}
@@ -541,12 +558,14 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
+                                {settingsMessage && (
+                                    <div className="profile-alert success" role="status">{settingsMessage}</div>
+                                )}
+
                                 <button 
                                     type="button" 
                                     className="booking-action-btn profile-save-btn"
-                                    onClick={() => {
-                                        alert('Pengaturan notifikasi berhasil diperbarui!');
-                                    }}
+                                    onClick={handleNotificationSave}
                                 >
                                     Save settings
                                 </button>

@@ -425,12 +425,10 @@ export function SalonDetailView({
         });
     }
 
-    function openBookingInNewTab() {
-        const bookingTab = window.open(bookingPathWithDate(branch, bookingDate), '_blank');
-
-        if (bookingTab) {
-            bookingTab.opener = null;
-        }
+    function openBooking() {
+        // Keep detail and booking in one history stack so the browser Back
+        // button returns to the exact salon the customer came from.
+        router.push(bookingPathWithDate(branch, bookingDate));
     }
 
     function addService(service) {
@@ -441,7 +439,7 @@ export function SalonDetailView({
         setSelectedServices(nextServices);
         setActiveService(null);
         createBookingDraft(nextServices);
-        openBookingInNewTab();
+        openBooking();
     }
 
     function toggleFavorite() {
@@ -484,7 +482,7 @@ export function SalonDetailView({
 
     function startBooking() {
         createBookingDraft(selectedServices);
-        openBookingInNewTab();
+        openBooking();
     }
 
     function goBack() {

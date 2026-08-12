@@ -432,6 +432,34 @@ function normalizeBranch(branch, index) {
     };
 }
 
+function compactSearchBranch(branch) {
+    return {
+        id: branch.id,
+        slug: branch.slug,
+        publicCode: branch.publicCode,
+        name: branch.name,
+        provider: branch.provider,
+        city: branch.city,
+        state: branch.state,
+        minPrice: branch.minPrice,
+        rating: branch.rating,
+        reviews: branch.reviews,
+        serviceCategories: branch.serviceCategories,
+        services: branch.services.map((service) => ({
+            category: service.category,
+            categoryId: service.categoryId,
+            categorySlug: service.categorySlug,
+            mainCategoryId: service.mainCategoryId,
+            mainCategorySlug: service.mainCategorySlug,
+        })),
+        image: branch.image,
+        images: branch.images,
+        tag: branch.tag,
+        latitude: branch.latitude,
+        longitude: branch.longitude,
+    };
+}
+
 function normalizeLocation(location) {
     const label = location?.city || location?.city_id || location?.state || location?.state_id || location?.country || location?.country_id || location?.label || '';
     return {
@@ -639,7 +667,7 @@ function filterAndSortBranches(branches, { minPrice, maxPrice, minRating, sort }
     });
 }
 
-export async function getSearchPayload(filters = {}) {
+export async function getSearchPayload(filters = {}, { compact = false } = {}) {
     const service = normalizeSearchService(filters.service);
     const taxonomyFilter = normalizeTaxonomyFilter(filters);
     const location = normalizeSearchLocation(filters.location);
@@ -672,10 +700,10 @@ export async function getSearchPayload(filters = {}) {
         : normalized;
     const advancedFiltered = filterAndSortBranches(serviceFiltered, filters);
 
-    // The map can be panned to other areas, so it needs every salon that matches the
-    // service (regardless of the initial location). The result list, however, starts
-    // focused on the searched location.
-    const mapBranches = advancedFiltered;
+    // The map can be panned to other areas, while the result list starts focused on
+    // the searched location. Only send the full catalog once and describe the
+    // initial result order with ids; serializing the same branch objects in three
+    // arrays made the search document several times larger than necessary.
     let resultBranches = advancedFiltered;
     if (lat !== null && lng !== null) {
         const nearby = advancedFiltered
@@ -706,12 +734,16 @@ export async function getSearchPayload(filters = {}) {
         .filter(Boolean);
 
     return {
-        branches: resultBranches.slice(0, 100),
-        mapBranches: mapBranches.slice(0, 200),
-        allBranches: normalized.slice(0, 200),
+        branches: [],
+        mapBranches: [],
+        allBranches: normalized.slice(0, 200).map((branch) => (
+            compact ? compactSearchBranch(branch) : branch
+        )),
+        initialBranchIds: resultBranches.slice(0, 100).map((branch) => String(branch.id)),
         legacyBranches: demoCatalogFallbackEnabled() ? fallbackBranches.map(normalizeBranch) : [],
         locations,
         categories,
         providerUrl: normalizeUrl(publicEnv('PROVIDER_FRONTEND_URL', 'http://127.0.0.1:5173')) || '/provider',
+        customerAppUrl: normalizeUrl(publicEnv('CUSTOMER_APP_URL', 'http://127.0.0.1:5174')) || '/',
     };
 }

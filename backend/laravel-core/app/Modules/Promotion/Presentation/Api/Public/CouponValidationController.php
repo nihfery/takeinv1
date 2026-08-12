@@ -49,19 +49,25 @@ class CouponValidationController extends ApiController
             'service_ids.*' => ['required', 'integer', Rule::exists('services', 'id')],
         ]);
 
-        $serviceIds = collect($validated['service_ids'])
+        $requestedServiceIds = collect($validated['service_ids'])
             ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+            ->values();
+        $uniqueServiceIds = $requestedServiceIds->unique()->values();
 
-        $services = Service::query()
+        $servicesById = Service::query()
             ->with('serviceCategory')
-            ->whereIn('id', $serviceIds)
+            ->whereIn('id', $uniqueServiceIds->all())
             ->where('status', 'active')
-            ->get();
+            ->get()
+            ->keyBy(fn (Service $service) => (int) $service->id);
 
-        abort_if($services->count() !== count($serviceIds), 422, 'Ada layanan yang tidak valid.');
+        abort_if($servicesById->count() !== $uniqueServiceIds->count(), 422, 'Ada layanan yang tidak valid.');
+
+        // Preserve repeated service IDs. Group bookings can contain the same
+        // service for multiple participants and finalization prices each one.
+        $services = $requestedServiceIds
+            ->map(fn (int $serviceId) => $servicesById->get($serviceId))
+            ->values();
 
         $summary = $this->coupons->priceSummary($services, $validated['coupon_code']);
 

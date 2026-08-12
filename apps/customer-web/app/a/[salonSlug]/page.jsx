@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getBranchInitialDetail, getSearchPayload } from '../../../src/lib/landing-data.js';
 import { findBranchByRoute, getSalonPath, getSalonRouteSlug } from '../../../src/lib/salon-routes.js';
 import { SalonDetailView } from '../../../src/components/SalonDetailView.jsx';
@@ -66,7 +66,11 @@ export default async function SalonDetailPage({ params, searchParams }) {
     const initialBookingDate = pickParam(query.date);
     const { payload, branches, branch } = await getBranchForRoute(salonSlug);
 
-    if (!branch) notFound();
+    // A browser Back action can restore an old catalog URL after the branch was
+    // removed, renamed, or a demo catalog was replaced by the live backend. Do
+    // not leave customers on Next's bare 404 page; replace the stale entry with
+    // the live search page instead.
+    if (!branch) redirect('/search?notice=salon-not-found');
 
     const canonicalSlug = getSalonRouteSlug(branch);
     if (decodeURIComponent(String(salonSlug || '')) !== canonicalSlug) {

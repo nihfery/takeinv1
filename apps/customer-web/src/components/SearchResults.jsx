@@ -139,6 +139,13 @@ function normalizeSearchLocation(value) {
     return ['current location', 'lokasi saat ini'].includes(label) ? '' : location;
 }
 
+function selectBranchesById(source, branchIds, fallback = []) {
+    if (!Array.isArray(branchIds)) return fallback;
+
+    const branchesById = new Map(source.map((branch) => [String(branch.id), branch]));
+    return branchIds.map((id) => branchesById.get(String(id))).filter(Boolean);
+}
+
 function SalonResultCard({ branch, onPreview, onPreviewEnd, searchDate = '', taxonomyFilter = {} }) {
     const matchedService = hasTaxonomyFilter(taxonomyFilter)
         ? branch.services?.find((service) => serviceMatchesTaxonomy(service, taxonomyFilter))
@@ -192,6 +199,7 @@ export function SearchResults({
     branches = [],
     mapBranches = [],
     allBranches = [],
+    initialBranchIds = null,
     locations = [],
     providerUrl = '/provider',
     initialService = '',
@@ -209,11 +217,14 @@ export function SearchResults({
     initialSubcategoryId = '',
     initialSubcategorySlug = '',
 }) {
+    const branchSource = allBranches.length ? allBranches : mapBranches.length ? mapBranches : branches;
     const [previewBranch, setPreviewBranch] = useState(null);
     const [slideIndex, setSlideIndex] = useState(0);
     const [mapExpanded, setMapExpanded] = useState(false);
     const [mapHidden, setMapHidden] = useState(false);
-    const [viewBranches, setViewBranches] = useState(branches);
+    const [viewBranches, setViewBranches] = useState(() => (
+        selectBranchesById(branchSource, initialBranchIds, branches)
+    ));
 
     // Applied filters drive the map exploration/focus sets. They start from the
     // Server-rendered query and update in place when the user presses Search.
@@ -250,11 +261,11 @@ export function SearchResults({
     // map fits the searched area first.
     const exploreBranches = useMemo(
         () => filterAndSortBranches(
-            (allBranches.length ? allBranches : mapBranches.length ? mapBranches : branches)
+            branchSource
                 .filter((branch) => branchMatchesService(branch, appliedService, appliedTaxonomyFilter)),
             appliedAdvancedFilters
         ),
-        [allBranches, mapBranches, branches, appliedService, appliedTaxonomyFilter, appliedAdvancedFilters]
+        [branchSource, appliedService, appliedTaxonomyFilter, appliedAdvancedFilters]
     );
     const focusBranches = useMemo(() => {
         if (!appliedLocation && !appliedCoords) return exploreBranches;
@@ -300,10 +311,12 @@ export function SearchResults({
             subcategoryId: initialSubcategoryId,
             subcategorySlug: initialSubcategorySlug,
         }));
-        setViewBranches(branches);
+        setViewBranches(selectBranchesById(branchSource, initialBranchIds, branches));
         setPreviewBranch(null);
     }, [
         branches,
+        branchSource,
+        initialBranchIds,
         initialService,
         initialLocation,
         initialLat,
@@ -339,7 +352,7 @@ export function SearchResults({
             ? { lat: payload.coords.lat, lng: payload.coords.lng }
             : null;
 
-        const source = allBranches.length ? allBranches : mapBranches.length ? mapBranches : branches;
+        const source = branchSource;
         const initialTaxonomyFilter = normalizeTaxonomyFilter({
             categoryId: initialCategoryId,
             categorySlug: initialCategorySlug,

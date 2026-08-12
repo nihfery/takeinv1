@@ -973,6 +973,98 @@ export async function submitCustomerBookingReview(bookingCode, review = {}) {
     return normalizeBackendBooking(payload?.data);
 }
 
+function normalizePublicBranch(branch = {}) {
+    return {
+        ...branch,
+        id: branch.id,
+        name: branch.branch_name || branch.name || `Salon ${branch.id}`,
+        city: branch.city_id || branch.city || '',
+        state: branch.state_id || branch.state || '',
+        country: branch.country_id || branch.country || 'Indonesia',
+        image: branch.image_url || branch.image || branch.image_urls?.[0] || '',
+        rating: Number(branch.rating || branch.branch_reviews_avg_rating || 0),
+        reviews: Number(branch.review_count || branch.branch_reviews_count || 0),
+        minPrice: Number(branch.min_price || 0),
+        servicesCount: Number(branch.services_count || 0),
+        staffCount: Number(branch.staffs_count || 0),
+    };
+}
+
+export async function getPublicBranches() {
+    const response = await fetch(`${API_BASE}/branches?per_page=100`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    });
+    const payload = await parseJson(response);
+
+    if (!response.ok) {
+        throw new Error(payload?.message || 'Daftar salon belum dapat dimuat.');
+    }
+
+    return Array.isArray(payload?.data)
+        ? payload.data.map(normalizePublicBranch)
+        : [];
+}
+
+export async function getPublicCoupons() {
+    const response = await fetch(`${API_BASE}/coupons?per_page=50`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    });
+    const payload = await parseJson(response);
+
+    if (!response.ok) {
+        throw new Error(payload?.message || 'Promo aktif belum dapat dimuat.');
+    }
+
+    return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+export async function validateCustomerCoupon({ couponCode, serviceIds = [] }) {
+    const numericServiceIds = serviceIds
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (!String(couponCode || '').trim() || numericServiceIds.length === 0) {
+        throw new Error('Kode voucher dan layanan wajib dipilih.');
+    }
+
+    await ensureCsrfCookie();
+
+    const response = await fetch(`${API_BASE}/coupons/validate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-XSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify({
+            coupon_code: String(couponCode).trim().toUpperCase(),
+            service_ids: numericServiceIds,
+        }),
+    });
+    const payload = await parseJson(response);
+
+    if (!response.ok) {
+        const validationMessage = payload?.errors
+            ? Object.values(payload.errors).flat().find(Boolean)
+            : '';
+        throw new Error(validationMessage || payload?.message || 'Voucher tidak dapat diterapkan.');
+    }
+
+    return payload?.data || {};
+}
+
 export async function getPublicBranchDetail(branchId) {
     const numericBranchId = Number(branchId);
 

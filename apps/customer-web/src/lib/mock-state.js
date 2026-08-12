@@ -307,6 +307,26 @@ function migrateLegacyLocalData(key, fallbackValue) {
     return value;
 }
 
+function customerSessionKey(key) {
+    const session = getSessionUser();
+    const identity = session.loggedIn
+        ? (session.user?.id ?? session.user?.email ?? 'customer')
+        : 'guest';
+    const safeIdentity = String(identity).replace(/[^a-zA-Z0-9_.-]/g, '_') || 'guest';
+
+    return `${key}:${safeIdentity}`;
+}
+
+function migrateUnscopedCustomerData(key, fallbackValue) {
+    const sessionValue = getSessionData(key, null);
+
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(`salonku_${key}`);
+    }
+
+    return sessionValue ?? migrateLegacyLocalData(key, fallbackValue);
+}
+
 // Active Cart/Booking Draft Manager
 function bookingDraftSessionKey() {
     const session = getSessionUser();
@@ -368,10 +388,11 @@ export function clearBookingDraft() {
 export function getBookingsList() {
     if (!getSessionUser().loggedIn) return [];
 
-    let list = getSessionData('bookings_list', null);
-    if (!list) {
-        list = migrateLegacyLocalData('bookings_list', []);
-        setSessionData('bookings_list', list);
+    const key = customerSessionKey('bookings_list');
+    let list = getSessionData(key, null);
+    if (!Array.isArray(list)) {
+        list = migrateUnscopedCustomerData('bookings_list', []);
+        setSessionData(key, list);
     }
     
     // Sort chronologically (latest first)
@@ -382,7 +403,8 @@ export function saveBookingsList(list) {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('salonku_bookings_list');
     }
-    setSessionData('bookings_list', list);
+    if (!getSessionUser().loggedIn) return;
+    setSessionData(customerSessionKey('bookings_list'), Array.isArray(list) ? list : []);
 }
 
 export function addBookingToList(booking) {
@@ -413,14 +435,40 @@ export function getUserProfile() {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('salonku_user_profile');
     }
-    return getSessionData('user_profile', defaultProfile);
+    const key = customerSessionKey('user_profile');
+    let profile = getSessionData(key, null);
+
+    if (!profile) {
+        profile = migrateUnscopedCustomerData('user_profile', defaultProfile);
+        setSessionData(key, profile);
+    }
+
+    return profile;
 }
 
 export function saveUserProfile(profile) {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('salonku_user_profile');
     }
-    setSessionData('user_profile', profile);
+    setSessionData(customerSessionKey('user_profile'), profile);
+}
+
+export function getNotificationPreferences() {
+    return getSessionData(customerSessionKey('notification_preferences'), {
+        emailAlerts: true,
+        waAlerts: true,
+        promoNewsletter: false,
+    });
+}
+
+export function saveNotificationPreferences(preferences) {
+    if (!getSessionUser().loggedIn) return;
+
+    setSessionData(customerSessionKey('notification_preferences'), {
+        emailAlerts: Boolean(preferences?.emailAlerts),
+        waAlerts: Boolean(preferences?.waAlerts),
+        promoNewsletter: Boolean(preferences?.promoNewsletter),
+    });
 }
 
 export function getSessionUser() {
@@ -476,11 +524,12 @@ export function setSessionUser(session) {
 
 // Favorite Salons Manager
 export function getFavoritesList() {
-    const list = getSessionData('favorites_list', null);
-    if (list) return list;
+    const key = customerSessionKey('favorites_list');
+    const list = getSessionData(key, null);
+    if (Array.isArray(list)) return list;
 
-    const legacyList = migrateLegacyLocalData('favorites_list', []);
-    setSessionData('favorites_list', legacyList);
+    const legacyList = migrateUnscopedCustomerData('favorites_list', []);
+    setSessionData(key, legacyList);
     return legacyList;
 }
 
@@ -488,13 +537,14 @@ export function saveFavoritesList(list) {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('salonku_favorites_list');
     }
-    setSessionData('favorites_list', list);
+    setSessionData(customerSessionKey('favorites_list'), Array.isArray(list) ? list : []);
 }
 
 export function toggleFavoriteSalon(salonId) {
     let list = getFavoritesList();
-    if (list.includes(salonId)) {
-        list = list.filter(id => id !== salonId);
+    const alreadySaved = list.some((id) => String(id) === String(salonId));
+    if (alreadySaved) {
+        list = list.filter((id) => String(id) !== String(salonId));
     } else {
         list.push(salonId);
     }

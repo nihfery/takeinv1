@@ -26,21 +26,24 @@ export default async function SearchPage({ searchParams }) {
     const subcategoryId = pickParam(params.subcategory_id);
     const subcategorySlug = pickParam(params.subcategory);
 
-    const payload = await getSearchPayload({
-        service,
-        location,
-        date,
-        lat,
-        lng,
-        minPrice,
-        maxPrice,
-        minRating,
-        sort,
-        categoryId,
-        categorySlug,
-        subcategoryId,
-        subcategorySlug,
-    });
+    const payload = await getSearchPayload(
+        {
+            service,
+            location,
+            date,
+            lat,
+            lng,
+            minPrice,
+            maxPrice,
+            minRating,
+            sort,
+            categoryId,
+            categorySlug,
+            subcategoryId,
+            subcategorySlug,
+        },
+        { compact: true }
+    );
 
     return (
         <SearchResults

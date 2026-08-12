@@ -8,6 +8,7 @@ import { setSessionUser } from '../lib/mock-state.js';
 import { logoutCustomer } from '../lib/auth-api.js';
 import { getSalonPath } from '../lib/salon-routes.js';
 import { fallbackServiceTaxonomy, getCategoryPath } from '../lib/service-taxonomy.js';
+import { PROVIDER_FRONTEND_URL } from '../lib/app-urls.js';
 import { useCustomerSessionState } from './CustomerSessionProvider.jsx';
 import SalonMap from './SalonMap.jsx';
 import {
@@ -1311,7 +1312,7 @@ export function SearchExperience({
     );
 }
 
-export function Footer({ providerUrl, customerAppUrl }) {
+export function Footer({ providerUrl = PROVIDER_FRONTEND_URL, customerAppUrl = '/' } = {}) {
     return (
         <footer className={'site-footer'}>
             <div className={'footer-inner'}>
@@ -1349,7 +1350,7 @@ export function Footer({ providerUrl, customerAppUrl }) {
             </div>
             <div className={'footer-bottom'}>
                 <a href="/">English</a>
-                <span>(c) 2026 YouYaku</span>
+                <span>© 2026 YouYaku</span>
             </div>
         </footer>
     );
@@ -3214,7 +3215,7 @@ function FreshFooter({ providerUrl, customerAppUrl }) {
             </div>
             <div className="fresh-footer-bottom">
                 <span>English</span>
-                <span>(c) 2026 YouYaku</span>
+                <span>© 2026 YouYaku</span>
             </div>
         </footer>
     );

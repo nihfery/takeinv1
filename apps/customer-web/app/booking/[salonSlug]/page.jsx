@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
     mockSalons, 
     mockAddons, 
-    mockPromos,
     addBookingToList,
     getBookingDraft, 
     getSessionUser,
@@ -21,8 +20,10 @@ import {
     fetchCurrentCustomer,
     finalizeCustomerBooking,
     getPublicBranchDetail,
+    getPublicBranches,
     holdCustomerBooking,
     pingCustomerBookingInteraction,
+    validateCustomerCoupon,
 } from '../../../src/lib/auth-api.js';
 import { findBranchByRoute, getSalonPath, getSalonRouteSlug } from '../../../src/lib/salon-routes.js';
 import { StaffProfileModal } from '../../../src/components/StaffProfileModal.jsx';
@@ -245,6 +246,7 @@ export default function BookingFlowPage({ params }) {
     const [appliedVoucher, setAppliedVoucher] = useState(null);
     const [voucherError, setVoucherError] = useState('');
     const [voucherSuccess, setVoucherSuccess] = useState('');
+    const [validatingVoucher, setValidatingVoucher] = useState(false);
     const allowExitRef = useRef(false);
     const exitGuardArmedRef = useRef(false);
     const shouldWarnBeforeExitRef = useRef(false);
@@ -254,6 +256,13 @@ export default function BookingFlowPage({ params }) {
     const timeValidationRequestRef = useRef(0);
     const selectedTimeRef = useRef('');
     const bookingCompletedRef = useRef(false);
+
+    useEffect(() => {
+        setAppliedVoucher(null);
+        setVoucherCode('');
+        setVoucherError('');
+        setVoucherSuccess('');
+    }, [selectedServices, participantSelections]);
 
     const commitParticipantSelections = (nextSelections) => {
         participantSelectionsRef.current = nextSelections;
@@ -287,7 +296,7 @@ export default function BookingFlowPage({ params }) {
             || String(draftSlug) === routeSlug
             || String(draftSlug).toLowerCase() === String(routeSlug).toLowerCase()
         );
-        const matchedSalon = findBranchByRoute(mockSalons, salonSlug);
+        const matchedMockSalon = findBranchByRoute(mockSalons, salonSlug);
         const draftSalon = draftMatchesRoute ? {
             ...mockSalons[0],
             id: String(draft.salonId),
@@ -301,7 +310,28 @@ export default function BookingFlowPage({ params }) {
             services: normalizeBookingServices(draft.availableServices?.length ? draft.availableServices : draft.services),
             staff: [],
         } : null;
-        const activeSalon = draftSalon || matchedSalon || mockSalons[0];
+        let catalogSalon = null;
+
+        if (!draftSalon) {
+            try {
+                const catalogBranches = await getPublicBranches();
+                if (cancelled) return;
+                catalogSalon = findBranchByRoute(catalogBranches, salonSlug);
+            } catch {
+                // The route fallback below keeps an invalid or unavailable
+                // catalog link from silently booking the wrong salon.
+            }
+        }
+
+        const activeSalon = draftSalon
+            || catalogSalon
+            || (process.env.NODE_ENV !== 'production' ? matchedMockSalon : null);
+
+        if (!activeSalon) {
+            allowExitRef.current = true;
+            router.replace('/search?notice=salon-not-found');
+            return;
+        }
         const draftBookingDate = draft && String(draft.salonId) === String(activeSalon.id)
             ? normalizeRequestedBookingDate(draft.date)
             : '';
@@ -1153,11 +1183,7 @@ export default function BookingFlowPage({ params }) {
                 && candidateEnd > otherStart;
         });
     };
-    const discountAmount = appliedVoucher
-        ? appliedVoucher.type === 'percentage'
-            ? Math.round((subtotal * appliedVoucher.val) / 100)
-            : appliedVoucher.val
-        : 0;
+    const discountAmount = Number(appliedVoucher?.discountAmount || 0);
     const totalToPay = Math.max(0, subtotal - discountAmount);
     const paymentOptions = [
         { value: 'QRIS', title: 'QRIS', desc: 'GoPay, OVO, ShopeePay, Dana, LinkAja' },
@@ -2171,30 +2197,74 @@ export default function BookingFlowPage({ params }) {
         }
     };
 
+    const navigateAfterBookingExit = (targetPath) => {
+        if (typeof window === 'undefined' || !exitGuardArmedRef.current) {
+            router.replace(targetPath);
+            return;
+        }
+
+        const bookingUrl = window.location.href;
+        const targetUrl = new URL(targetPath, bookingUrl);
+        const targetLocation = `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`;
+        const finishAtTarget = () => {
+            const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+            if (currentLocation !== targetLocation) {
+                window.location.replace(targetPath);
+            }
+        };
+
+        // The guarded booking flow owns two consecutive history entries: the
+        // booking route and its sentinel. Move behind both when the booking was
+        // opened from a salon; a directly opened tab only needs its sentinel
+        // removed. Back can therefore never reopen a finished booking session.
+        const historySteps = window.history.length > 2 ? -2 : -1;
+        window.addEventListener('popstate', finishAtTarget, { once: true });
+        window.history.go(historySteps);
+
+        // A directly opened tab may not have two earlier entries. In that case,
+        // replace the current location after the history traversal has failed.
+        window.setTimeout(() => {
+            if (window.location.href === bookingUrl) {
+                window.removeEventListener('popstate', finishAtTarget);
+                window.location.replace(targetPath);
+            }
+        }, 400);
+    };
+
     const requestExitBooking = () => {
+        const salonPath = getSalonPath(salon);
+        exitTargetPathRef.current = salonPath;
+
         if (shouldWarnBeforeExit) {
             setShowExitDialog(true);
             return;
         }
 
         allowExitRef.current = true;
-        router.replace(getSalonPath(salon));
+        navigateAfterBookingExit(salonPath);
     };
 
     const cancelExitBooking = () => {
+        exitTargetPathRef.current = getSalonPath(salon);
         setShowExitDialog(false);
     };
 
     const confirmExitBooking = async () => {
+        const salonPath = getSalonPath(salon);
+        const targetPath = exitTargetPathRef.current || salonPath;
+
         allowExitRef.current = true;
         await releaseHeldBooking();
         clearBookingDraft();
         setShowExitDialog(false);
-        router.replace(exitTargetPathRef.current || getSalonPath(salon));
+        navigateAfterBookingExit(targetPath);
     };
 
-    const handleApplyVoucher = (event) => {
+    const handleApplyVoucher = async (event) => {
         event.preventDefault();
+        if (validatingVoucher) return;
+
         setVoucherError('');
         setVoucherSuccess('');
 
@@ -2204,21 +2274,40 @@ export default function BookingFlowPage({ params }) {
             return;
         }
 
-        const promo = mockPromos.find((item) => item.code === code);
-        if (!promo) {
+        const couponServiceIds = bookingMode === 'group'
+            ? participantSelections.flatMap((selection) => (selection.services || []).map((service) => service.id))
+            : selectedServices.map((service) => service.id);
+
+        if (couponServiceIds.length === 0) {
             setAppliedVoucher(null);
-            setVoucherError('Kode voucher tidak valid atau kedaluwarsa.');
+            setVoucherError('Pilih minimal satu layanan sebelum menerapkan voucher.');
             return;
         }
 
-        if (subtotal < promo.minTx) {
-            setAppliedVoucher(null);
-            setVoucherError(`Min. transaksi untuk voucher ini adalah ${formatBookingPrice(promo.minTx)}.`);
-            return;
-        }
+        setValidatingVoucher(true);
 
-        setAppliedVoucher(promo);
-        setVoucherSuccess(`Voucher ${promo.code} berhasil diterapkan.`);
+        try {
+            const validation = await validateCustomerCoupon({
+                couponCode: code,
+                serviceIds: couponServiceIds,
+            });
+            const coupon = validation?.coupon;
+
+            if (!coupon) throw new Error('Data voucher dari server tidak lengkap.');
+
+            setAppliedVoucher({
+                ...coupon,
+                code: coupon.code || code,
+                discountAmount: Number(validation.discount_amount || 0),
+            });
+            setVoucherCode(coupon.code || code);
+            setVoucherSuccess(`Voucher ${coupon.code || code} berhasil diterapkan.`);
+        } catch (applyError) {
+            setAppliedVoucher(null);
+            setVoucherError(applyError.message || 'Voucher tidak dapat diterapkan.');
+        } finally {
+            setValidatingVoucher(false);
+        }
     };
 
     const handleRemoveVoucher = () => {
@@ -3222,7 +3311,9 @@ export default function BookingFlowPage({ params }) {
                                                     onChange={(event) => setVoucherCode(event.target.value)}
                                                     placeholder="NEWUSER"
                                                 />
-                                                <button type="submit">Apply</button>
+                                                <button type="submit" disabled={validatingVoucher}>
+                                                    {validatingVoucher ? 'Checking...' : 'Apply'}
+                                                </button>
                                             </form>
                                         ) : (
                                             <div className="booking-applied-voucher compact">
