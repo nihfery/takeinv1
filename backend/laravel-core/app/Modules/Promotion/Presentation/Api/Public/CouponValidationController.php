@@ -3,19 +3,17 @@
 namespace App\Modules\Promotion\Presentation\Api\Public;
 
 use App\Http\Controllers\Api\ApiController;
-use App\Modules\Promotion\Infrastructure\Persistence\Models\Coupon;
 use App\Modules\Catalog\Infrastructure\Persistence\Models\Service;
 use App\Modules\Catalog\Infrastructure\Persistence\Models\ServiceCategory;
 use App\Modules\Promotion\Application\Services\CouponService;
+use App\Modules\Promotion\Infrastructure\Persistence\Models\Coupon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class CouponValidationController extends ApiController
 {
-    public function __construct(private readonly CouponService $coupons)
-    {
-    }
+    public function __construct(private readonly CouponService $coupons) {}
 
     public function index(Request $request): JsonResponse
     {
